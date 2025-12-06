@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ToyOS on Wasm</title>
+  <!-- SPDX-License-Identifier: GPL-2.0-only -->
+
+  <script src="xterm.js"></script>
+  <link rel="stylesheet" href="xterm.css" />
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const term = new Terminal({ theme: { background: "#013425", foreground: "#FFC012" } });
+      term.open(document.getElementById("terminal"));
+
+      const log = (text) => term.write(("\x1B[2m" + text + "\x1B[0m\n").replaceAll("\n", "\r\n"));
+      const console_write = (data) => term.write(data);  // Pre-decoded UTF-8 data.
+
+      // This is needed for SharedArrayBuffer on modern browsers.
+      if (!window.crossOriginIsolated) {
+        log("Error: Server did not set correct cross-origin-isolated headers.");
+      }
+
+      let wasmMemory;
+      function readStringFromMemory(offset) {
+        if (!wasmMemory) return "";
+        const buffer = new Uint8Array(wasmMemory.buffer);
+        
+        let i = offset;
+        while (buffer[i] !== 0) 
+          i++;
+        const bytes = buffer.subarray(offset, i);
+        return new TextDecoder("utf-8").decode(bytes);
+      }
+
+      try {
+        const importObject = {
+          env: {
+            host_console_log: (ptr) => {
+              const message = readStringFromMemory(ptr);
+              log(message);
+            }
+          }
+        };
+
+        WebAssembly.instantiateStreaming(fetch("kernel.wasm"), importObject)
+          .then(obj => {
+              const kernel = obj.instance;
+              wasmMemory = kernel.exports.memory;
+              kernel.exports.kernel_entry(); 
+          });        
+      } catch (error) {
+        log("kernel failed with (" + error.name + "): " + error.message + "\n" + error.stack);
+        throw error;
+      }      
+    }, false);
+  </script>
+</head>
+
+<body>
+  <h1>ToyOS</h1>
+  <div id="terminal" tabindex="0"></div>
+</body>
+</html>
