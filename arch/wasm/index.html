@@ -42,7 +42,7 @@
           }
         };
 
-        WebAssembly.instantiateStreaming(fetch("kernel.wasm"), importObject)
+        WebAssembly.instantiateStreaming(fetch("toyos.wasm"), importObject)
           .then(obj => {
               const kernel = obj.instance;
               wasmMemory = kernel.exports.memory;
