@@ -5,3 +5,4 @@ Steps:
 1. Display ToyOS
 2. Implement echo functionality from bare metal
 3. Put echo into user space
+4. Read from a text file, and display it to the console
