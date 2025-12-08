@@ -7,7 +7,7 @@ static volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
 // Default color: Light Grey text on Black background (0x07)
 static const uint8_t DEFAULT_COLOR = 0x07;
 
-extern "C" void host_console_log(const char* ptr) {
+extern "C" void console_log(const char* ptr) {
     int i = 0;
     while (ptr[i] != '\0') {
         // VGA format: High byte is color, Low byte is character

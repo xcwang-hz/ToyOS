@@ -35,51 +35,86 @@ struct multiboot_info_t {
     uint8_t  framebuffer_type;
 };
 
-/* Define color constants (Assuming 32-bit ARGB or BGRA) */
-// Format usually: 0x00RRGGBB
-const uint32_t COLOR_WHITE = 0x00FFFFFF;
-const uint32_t COLOR_RED   = 0x00FF0000; 
+#ifdef CONSOLE
+extern "C" void console_log(const char* ptr);
+#endif // End CONSOLE
+
+#ifdef GRAPHICS
+
+
+#ifdef WASM
+    // A=FF, B=00, G=00, R=FF -> In memory: FF 00 00 FF
+    uint32_t COLOR_RED   = 0xFF0000FF; 
+    // A=FF, B=FF, G=FF, R=FF -> In memory: FF FF FF FF
+    uint32_t COLOR_WHITE = 0xFFFFFFFF;
+#else
+    uint32_t COLOR_RED   = 0x00FF0000;
+    uint32_t COLOR_WHITE = 0x00FFFFFF;
+#endif
+
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
+
+#ifdef WASM
+    // Static buffer for Wasm
+    uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+    extern "C" void canvas_refresh(uint32_t* ptr, int width, int height);
+#endif
 
 void put_pixel(multiboot_info_t* mbd, uint32_t x, uint32_t y, uint32_t color) {
-    // Address = Base + (y * pitch) + (x * bytes_per_pixel)
-    uint32_t bpp = mbd->framebuffer_bpp / 8; // e.g., 32 bits -> 4 bytes
-    uintptr_t address = (uintptr_t)mbd->framebuffer_addr + 
-                        (y * mbd->framebuffer_pitch) + 
-                        (x * bpp);
-
-    // volatile is crucial to prevent compiler from optimizing out memory writes
-    volatile uint32_t* pixel = (volatile uint32_t*)address;
-    *pixel = color;
+    #ifdef I386
+        if (mbd && (mbd->flags & (1 << 12))) {
+            uint32_t bpp = mbd->framebuffer_bpp / 8;
+            uintptr_t addr = (uintptr_t)mbd->framebuffer_addr + (y * mbd->framebuffer_pitch) + (x * bpp);
+            *(volatile uint32_t*)addr = color;
+        }
+    #elif defined(WASM)
+        (void)mbd; // Silence warning
+        if (x < SCREEN_WIDTH && y < SCREEN_HEIGHT) {
+            wasm_framebuffer[y * SCREEN_WIDTH + x] = color;
+        }
+    #endif
 }
 
-void draw_rect(multiboot_info_t* mbd, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
-    for (uint32_t row = 0; row < h; ++row) {
-        for (uint32_t col = 0; col < w; ++col) {
+void graphics_draw_rect(multiboot_info_t* mbd, int x, int y, int w, int h, uint32_t color) {
+    for (int row = 0; row < h; row++) {
+        for (int col = 0; col < w; col++) {
             put_pixel(mbd, x + col, y + row, color);
         }
     }
 }
 
-extern "C" {
-    void host_console_log(const char* ptr);
-}
+#endif // End GRAPHICS
 
 extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
-    //host_console_log("ToyOS: ");
+    (void)magic; // Silence warning
+ 
+    #ifdef CONSOLE
+        (void)mbd; // Silence warning
+        console_log("ToyOS: ");
+    #endif
 
-    if (magic != 0x2BADB002)
-        return;
+    #ifdef GRAPHICS
+        // Draw White Background
+        #ifdef I386
+            uint32_t w = mbd->framebuffer_width;
+            uint32_t h = mbd->framebuffer_height;
+        #else
+            (void)mbd; // Silence warning
+            uint32_t w = SCREEN_WIDTH;
+            uint32_t h = SCREEN_HEIGHT;
+        #endif
 
-    for (uint32_t y = 0; y < mbd->framebuffer_height; ++y) {
-        for (uint32_t x = 0; x < mbd->framebuffer_width; ++x) {
-            put_pixel(mbd, x, y, COLOR_WHITE);
-        }
-    }
+        // Clear Screen White
+        graphics_draw_rect(mbd, 0, 0, w, h, COLOR_WHITE);
+        
+        // Draw Red Box
+        // Note: I386 is usually ARGB/BGRA, Wasm is ABGR (Little Endian RGBA)
+        // You might need a color conversion macro later.
+        graphics_draw_rect(mbd, 350, 250, 100, 100, COLOR_RED);
 
-    /* 4. Draw a RED Square in the Center */
-    uint32_t rect_size = 100;
-    uint32_t center_x = (mbd->framebuffer_width - rect_size) / 2;
-    uint32_t center_y = (mbd->framebuffer_height - rect_size) / 2;
-
-    draw_rect(mbd, center_x, center_y, rect_size, rect_size, COLOR_RED);    
+        #ifdef WASM
+            canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+        #endif
+    #endif    
 }

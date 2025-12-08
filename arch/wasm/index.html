@@ -7,9 +7,53 @@
 
   <script src="xterm.js"></script>
   <link rel="stylesheet" href="xterm.css" />
+  <style>
+    body { 
+      background: #222; 
+      color: #fff;
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      font-family: sans-serif;
+      margin-top: 20px;
+    }
+    
+    /* Container for the graphics display. Initially hidden (display: none). It becomes visible only
+        if the kernel requests a screen refresh (Graphics Mode).
+    */
+    #screen-container {
+      display: none;
+      border: 10px solid #444;
+      border-radius: 5px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+      background: #000;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #terminal {
+      width: 800px; /* Match the canvas width */
+    }
+    
+    .status {
+      color: #aaa;
+      margin-bottom: 10px;
+      font-size: 0.9em;
+    }
+  </style>  
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
-      const term = new Terminal({ theme: { background: "#013425", foreground: "#FFC012" } });
+      const term = new Terminal({
+        cursorBlink: true,
+        theme: { background: '#000000' }, // Match container background
+        rows: 34,  // Tuned to fit ~600px height
+        cols: 95,  // Tuned to fit ~800px width
+        fontFamily: 'Consolas, monospace',
+        fontSize: 15
+      });
       term.open(document.getElementById("terminal"));
 
       const log = (text) => term.write(("\x1B[2m" + text + "\x1B[0m\n").replaceAll("\n", "\r\n"));
@@ -19,6 +63,10 @@
       if (!window.crossOriginIsolated) {
         log("Error: Server did not set correct cross-origin-isolated headers.");
       }
+
+      const canvas = document.getElementById('screen');
+      const ctx = canvas.getContext('2d');
+      const screenContainer = document.getElementById('screen-container');      
 
       let wasmMemory;
       function readStringFromMemory(offset) {
@@ -35,9 +83,30 @@
       try {
         const importObject = {
           env: {
-            host_console_log: (ptr) => {
+            console_log: (ptr) => {
               const message = readStringFromMemory(ptr);
               log(message);
+            },
+                
+            // [Graphics Interface]
+            canvas_refresh: (ptr, width, height) => {
+              // Auto-detection: If this function is called, we are in Graphics Mode.
+              // Make the canvas container visible if it isn't already.
+              if (screenContainer.style.display === 'none' || screenContainer.style.display === '') {
+                  screenContainer.style.display = 'block';
+                  log('Graphics signal received. Displaying monitor');
+              }
+
+              // Calculate buffer size: Width * Height * 4 bytes (RGBA)
+              const bufferSize = width * height * 4;
+
+              // Create a view into the Wasm memory (Shared Memory)
+              // Uint8ClampedArray is required for ImageData
+              const dataArray = new Uint8ClampedArray(wasmMemory.buffer, ptr, bufferSize);
+
+              // Create ImageData and draw it to the canvas
+              const imgData = new ImageData(dataArray, width, height);
+              ctx.putImageData(imgData, 0, 0);
             }
           }
         };
@@ -46,7 +115,7 @@
           .then(obj => {
               const kernel = obj.instance;
               wasmMemory = kernel.exports.memory;
-              kernel.exports.kernel_entry(); 
+              kernel.exports.kernel_entry(0, 0); 
           });        
       } catch (error) {
         log("kernel failed with (" + error.name + "): " + error.message + "\n" + error.stack);
@@ -57,7 +126,12 @@
 </head>
 
 <body>
-  <h1>ToyOS</h1>
-  <div id="terminal" tabindex="0"></div>
+  <div class="status" id="status">Loading ToyOS...</div>
+  <div id="layout-container">
+  <div id="screen-container">
+    <canvas id="screen" width="800" height="600"></canvas>
+  </div>
+  <div id="terminal"></div>
+  </div>
 </body>
 </html>

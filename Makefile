@@ -9,12 +9,27 @@ CXX_I386      := clang++
 LD_I386       := ld.lld
 AS_I386       := clang
 
-CXXFLAGS_I386 := --target=i386-pc-none-elf -march=i386 \
-                 -ffreestanding -O2 -Wall -Wextra -std=c++20 \
+COMMON_FLAGS  := -ffreestanding -O2 -Wall -Wextra -std=c++20 \
                  -fno-exceptions -fno-rtti -fno-threadsafe-statics \
-                 -nostdinc \
-				 -fno-pie \
-                 -I. -IAK -I$(SRC_COMMON) -I$(ARCH_I386)
+                 -nostdinc -I$(SRC_COMMON) -I. -IAK
+
+# Default to CONSOLE if nothing specified
+MODE_FLAG := -DCONSOLE
+
+# Check if 'c' or 'g' is in the command line arguments
+ifneq ($(filter c,$(MAKECMDGOALS)),)
+    MODE_FLAG := -DCONSOLE
+    MODE_NAME := "Console"
+endif
+
+ifneq ($(filter g,$(MAKECMDGOALS)),)
+    MODE_FLAG := -DGRAPHICS
+    MODE_NAME := "Graphics"
+endif
+
+CXXFLAGS_I386 := --target=i386-pc-none-elf -march=i386 \
+				 $(COMMON_FLAGS) -fno-pie \
+                 -DI386 $(MODE_FLAG) -I$(ARCH_I386)
 
 # Linker must be LLD (part of LLVM) for best compatibility
 LDFLAGS_I386  := -m elf_i386 \
@@ -25,10 +40,8 @@ LDFLAGS_I386  := -m elf_i386 \
 # --- Wasm Toolchain (Clang) ---
 CXX_WASM      := clang
 CXXFLAGS_WASM := --target=wasm32 \
-                 -ffreestanding -O2 -Wall -Wextra -std=c++20 \
-                 -fno-exceptions -fno-rtti \
-                 -nostdinc \
-                 -I. -IAK -I$(SRC_COMMON) -I$(ARCH_WASM)
+                 $(COMMON_FLAGS) \
+                 -DWASM $(MODE_FLAG) -I$(ARCH_WASM)
 
 LDFLAGS_WASM  := --target=wasm32 \
 				 -nostdlib \
@@ -51,6 +64,14 @@ OBJS_WASM   := $(DIST_WASM)/kernel.o
 .PHONY: all clean runs runq server directories iso
 
 all: directories $(ISO_IMAGE) $(KERNEL_WASM)
+	@echo "Build Complete. Mode: $(MODE_FLAG)"
+
+# Dummy targets for arguments 'c' and 'g'
+# We don't do anything here; logic is handled by ifneq at the top
+c:
+	@:
+g:
+	@:	
 
 directories:
 	@mkdir -p $(DIST_I386)
