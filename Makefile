@@ -39,6 +39,7 @@ LDFLAGS_WASM  := --target=wasm32 \
 
 # --- Output Files ---
 KERNEL_BIN  := $(DIST_I386)/toyos.bin
+ISO_IMAGE   := $(DIST_I386)/toyos.iso
 KERNEL_WASM := $(DIST_WASM)/toyos.wasm
 OBJS_I386   := $(DIST_I386)/boot.o $(DIST_I386)/hal_i386.o $(DIST_I386)/kernel.o
 OBJS_WASM   := $(DIST_WASM)/kernel.o
@@ -47,15 +48,23 @@ OBJS_WASM   := $(DIST_WASM)/kernel.o
 # Rules
 # ==============================================================================
 
-.PHONY: all clean runs runq server directories
+.PHONY: all clean runs runq server directories iso
 
-all: directories $(KERNEL_BIN) $(KERNEL_WASM)
+all: directories $(ISO_IMAGE) $(KERNEL_WASM)
 
 directories:
 	@mkdir -p $(DIST_I386)
 	@mkdir -p $(DIST_WASM)
 
 # --- i386 Build ---
+
+$(ISO_IMAGE): $(KERNEL_BIN) $(ARCH_I386)/grub.cfg
+	@echo "[ISO]  Generating $@"
+	@mkdir -p $(BUILD_DIR)/isodir/boot/grub
+	@cp $(KERNEL_BIN) $(BUILD_DIR)/isodir/boot/toyos.bin
+	@cp $(ARCH_I386)/grub.cfg $(BUILD_DIR)/isodir/boot/grub/grub.cfg
+	@grub-mkrescue -o $(ISO_IMAGE) $(BUILD_DIR)/isodir > /dev/null 2>&1
+	@rm -rf $(BUILD_DIR)/isodir
 
 $(KERNEL_BIN): $(OBJS_I386) $(ARCH_I386)/linker.ld
 	@echo "[LINK] i386 Kernel (LLD)"
@@ -93,7 +102,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 runq: $(KERNEL_BIN)
-	qemu-system-i386 -kernel $(KERNEL_BIN)
+	qemu-system-i386 -cdrom $(ISO_IMAGE) -vga std
 
 runs: $(KERNEL_WASM)
 	cd $(DIST_WASM) && python3 server.py

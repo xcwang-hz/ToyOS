@@ -1,9 +1,10 @@
 /* Multiboot Header Magic Values */
-.set ALIGN,    1<<0             /* align loaded modules on page boundaries */
-.set MEMINFO,  1<<1             /* provide memory map via register EBX */
-.set FLAGS,    ALIGN | MEMINFO  /* this is the Multiboot 'flag' field */
-.set MAGIC,    0x1BADB002       /* 'magic number' lets bootloader find the header */
-.set CHECKSUM, -(MAGIC + FLAGS) /* checksum of above, to prove we are multiboot */
+.set ALIGN,    1<<0                         /* align loaded modules on page boundaries */
+.set MEMINFO,  1<<1                         /* provide memory map via register EBX */
+.set VIDEO,    1<<2                         /* [NEW] ask for video mode */
+.set FLAGS,    ALIGN | MEMINFO | VIDEO
+.set MAGIC,    0x1BADB002
+.set CHECKSUM, -(MAGIC + FLAGS)
 
 /* Declare constants for the multiboot header */
 .section .text.multiboot
@@ -11,6 +12,19 @@
 .long MAGIC
 .long FLAGS
 .long CHECKSUM
+
+/* * Address fields (unused because we don't set bit 16),
+ * but we MUST pad them with 0 to reach the video fields at offset 32.
+ * There are 5 uint32_t fields to skip: 
+ * header_addr, load_addr, load_end_addr, bss_end_addr, entry_addr
+ */
+.long 0, 0, 0, 0, 0
+
+/* Video Mode Preferences (Offset 32) */
+.long 0    /* Mode Type: 0 = Linear Graphics, 1 = Text */
+.long 800  /* Width */
+.long 600  /* Height */
+.long 32   /* Depth (Bits Per Pixel) */
 
 /* Reserve a stack for the kernel */
 .section .bss
@@ -26,6 +40,10 @@ stack_top:
 _start:
     mov $stack_top, %esp
     xor %ebp, %ebp
+
+    /* Push Multiboot Info Pointer (EBX) and Magic (EAX) */
+    push %ebx
+    push %eax    
     call kernel_entry
     cli
 hlt_loop:

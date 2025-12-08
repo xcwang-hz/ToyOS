@@ -3,7 +3,7 @@ I am trying to create a toy os that can run on the web, on bochs and QEMU. It is
 
 Steps:
 1. Display ToyOS on console
-2. Display ToyOS on canvas
+2. Draw a squre on the canvas
 3. Simple echo functionality on console
 4. Read from Initramfs file
 5. Support directory tree in memory
