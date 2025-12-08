@@ -1,8 +1,4 @@
-typedef unsigned short word;
-typedef unsigned char byte;
-
-typedef word uint16_t;
-typedef byte uint8_t;
+#include <AK/Types.h>
 
 // VGA Text Mode Buffer location
 // 0xB8000 is the standard memory address for color text screens

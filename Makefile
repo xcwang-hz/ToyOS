@@ -14,7 +14,7 @@ CXXFLAGS_I386 := --target=i386-pc-none-elf -march=i386 \
                  -fno-exceptions -fno-rtti -fno-threadsafe-statics \
                  -nostdinc \
 				 -fno-pie \
-                 -I$(SRC_COMMON) -I$(ARCH_I386)
+                 -I. -IAK -I$(SRC_COMMON) -I$(ARCH_I386)
 
 # Linker must be LLD (part of LLVM) for best compatibility
 LDFLAGS_I386  := -m elf_i386 \
@@ -28,7 +28,7 @@ CXXFLAGS_WASM := --target=wasm32 \
                  -ffreestanding -O2 -Wall -Wextra -std=c++20 \
                  -fno-exceptions -fno-rtti \
                  -nostdinc \
-                 -I$(SRC_COMMON) -I$(ARCH_WASM)
+                 -I. -IAK -I$(SRC_COMMON) -I$(ARCH_WASM)
 
 LDFLAGS_WASM  := --target=wasm32 \
 				 -nostdlib \
@@ -80,6 +80,8 @@ $(KERNEL_WASM): $(OBJS_WASM)
 	@$(CXX_WASM) -o $@ $(OBJS_WASM) $(LDFLAGS_WASM)
 	@cp $(ARCH_WASM)/index.html $(DIST_WASM)/ 2>/dev/null || :
 	@cp $(ARCH_WASM)/server.py $(DIST_WASM)/ 2>/dev/null || :
+	@cp $(ARCH_WASM)/xterm.js $(DIST_WASM)/ 2>/dev/null || :
+	@cp $(ARCH_WASM)/xterm.css $(DIST_WASM)/ 2>/dev/null || :
 
 $(DIST_WASM)/kernel.o: $(SRC_COMMON)/kernel.cpp
 	@echo "[CXX]  Wasm Common"

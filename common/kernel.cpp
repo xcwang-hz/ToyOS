@@ -3,5 +3,5 @@ extern "C" {
 }
 
 extern "C" void kernel_entry() {
-    host_console_log("ToyOS");
+    host_console_log("ToyOS: ");
 }
