@@ -7,5 +7,5 @@ Steps:
 3. Simple echo functionality on console
 4. Read from Initramfs file
 5. Support directory tree in memory
-6. Support both console and canvas
-7. DOOM
+6. Simple K-shell on graphic mode
+7. K-DOOM
