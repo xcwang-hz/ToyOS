@@ -35,13 +35,6 @@ struct multiboot_info_t {
     uint8_t  framebuffer_type;
 };
 
-#ifdef CONSOLE
-extern "C" void console_log(const char* ptr);
-#endif // End CONSOLE
-
-#ifdef GRAPHICS
-
-
 #ifdef WASM
     // A=FF, B=00, G=00, R=FF -> In memory: FF 00 00 FF
     uint32_t COLOR_RED   = 0xFF0000FF; 
@@ -84,37 +77,28 @@ void graphics_draw_rect(multiboot_info_t* mbd, int x, int y, int w, int h, uint3
     }
 }
 
-#endif // End GRAPHICS
-
 extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
     (void)magic; // Silence warning
  
-    #ifdef CONSOLE
+    // Draw White Background
+    #ifdef I386
+        uint32_t w = mbd->framebuffer_width;
+        uint32_t h = mbd->framebuffer_height;
+    #else
         (void)mbd; // Silence warning
-        console_log("ToyOS: ");
+        uint32_t w = SCREEN_WIDTH;
+        uint32_t h = SCREEN_HEIGHT;
     #endif
 
-    #ifdef GRAPHICS
-        // Draw White Background
-        #ifdef I386
-            uint32_t w = mbd->framebuffer_width;
-            uint32_t h = mbd->framebuffer_height;
-        #else
-            (void)mbd; // Silence warning
-            uint32_t w = SCREEN_WIDTH;
-            uint32_t h = SCREEN_HEIGHT;
-        #endif
+    // Clear Screen White
+    graphics_draw_rect(mbd, 0, 0, w, h, COLOR_WHITE);
+    
+    // Draw Red Box
+    // Note: I386 is usually ARGB/BGRA, Wasm is ABGR (Little Endian RGBA)
+    // You might need a color conversion macro later.
+    graphics_draw_rect(mbd, 350, 250, 100, 100, COLOR_RED);
 
-        // Clear Screen White
-        graphics_draw_rect(mbd, 0, 0, w, h, COLOR_WHITE);
-        
-        // Draw Red Box
-        // Note: I386 is usually ARGB/BGRA, Wasm is ABGR (Little Endian RGBA)
-        // You might need a color conversion macro later.
-        graphics_draw_rect(mbd, 350, 250, 100, 100, COLOR_RED);
-
-        #ifdef WASM
-            canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
-        #endif
-    #endif    
+    #ifdef WASM
+        canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+    #endif
 }

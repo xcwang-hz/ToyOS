@@ -13,23 +13,9 @@ COMMON_FLAGS  := -ffreestanding -O2 -Wall -Wextra -std=c++20 \
                  -fno-exceptions -fno-rtti -fno-threadsafe-statics \
                  -nostdinc -I$(SRC_COMMON) -I. -IAK
 
-# Default to CONSOLE if nothing specified
-MODE_FLAG := -DCONSOLE
-
-# Check if 'c' or 'g' is in the command line arguments
-ifneq ($(filter c,$(MAKECMDGOALS)),)
-    MODE_FLAG := -DCONSOLE
-    MODE_NAME := "Console"
-endif
-
-ifneq ($(filter g,$(MAKECMDGOALS)),)
-    MODE_FLAG := -DGRAPHICS
-    MODE_NAME := "Graphics"
-endif
-
 CXXFLAGS_I386 := --target=i386-pc-none-elf -march=i386 \
 				 $(COMMON_FLAGS) -fno-pie \
-                 -DI386 $(MODE_FLAG) -I$(ARCH_I386)
+                 -DI386 -I$(ARCH_I386)
 
 # Linker must be LLD (part of LLVM) for best compatibility
 LDFLAGS_I386  := -m elf_i386 \
@@ -41,7 +27,7 @@ LDFLAGS_I386  := -m elf_i386 \
 CXX_WASM      := clang
 CXXFLAGS_WASM := --target=wasm32 \
                  $(COMMON_FLAGS) \
-                 -DWASM $(MODE_FLAG) -I$(ARCH_WASM)
+                 -DWASM -I$(ARCH_WASM)
 
 LDFLAGS_WASM  := --target=wasm32 \
 				 -nostdlib \
@@ -54,7 +40,7 @@ LDFLAGS_WASM  := --target=wasm32 \
 KERNEL_BIN  := $(DIST_I386)/toyos.bin
 ISO_IMAGE   := $(DIST_I386)/toyos.iso
 KERNEL_WASM := $(DIST_WASM)/toyos.wasm
-OBJS_I386   := $(DIST_I386)/boot.o $(DIST_I386)/hal_i386.o $(DIST_I386)/kernel.o
+OBJS_I386   := $(DIST_I386)/boot.o $(DIST_I386)/kernel.o
 OBJS_WASM   := $(DIST_WASM)/kernel.o
 
 # ==============================================================================
@@ -64,14 +50,7 @@ OBJS_WASM   := $(DIST_WASM)/kernel.o
 .PHONY: all clean runs runq server directories iso
 
 all: directories $(ISO_IMAGE) $(KERNEL_WASM)
-	@echo "Build Complete. Mode: $(MODE_FLAG)"
-
-# Dummy targets for arguments 'c' and 'g'
-# We don't do anything here; logic is handled by ifneq at the top
-c:
-	@:
-g:
-	@:	
+	@echo "Build Complete."
 
 directories:
 	@mkdir -p $(DIST_I386)
@@ -95,10 +74,6 @@ $(DIST_I386)/kernel.o: $(SRC_COMMON)/kernel.cpp
 	@echo "[CXX]  i386 Common"
 	@$(CXX_I386) $(CXXFLAGS_I386) -c $< -o $@
 
-$(DIST_I386)/hal_i386.o: $(ARCH_I386)/hal_i386.cpp
-	@echo "[CXX]  i386 HAL"
-	@$(CXX_I386) $(CXXFLAGS_I386) -c $< -o $@
-
 $(DIST_I386)/boot.o: $(ARCH_I386)/boot.S
 	@echo "[AS]   i386 Boot"
 	@$(CXX_I386) $(CXXFLAGS_I386) -c $< -o $@
@@ -110,8 +85,6 @@ $(KERNEL_WASM): $(OBJS_WASM)
 	@$(CXX_WASM) -o $@ $(OBJS_WASM) $(LDFLAGS_WASM)
 	@cp $(ARCH_WASM)/index.html $(DIST_WASM)/ 2>/dev/null || :
 	@cp $(ARCH_WASM)/server.py $(DIST_WASM)/ 2>/dev/null || :
-	@cp $(ARCH_WASM)/xterm.js $(DIST_WASM)/ 2>/dev/null || :
-	@cp $(ARCH_WASM)/xterm.css $(DIST_WASM)/ 2>/dev/null || :
 
 $(DIST_WASM)/kernel.o: $(SRC_COMMON)/kernel.cpp
 	@echo "[CXX]  Wasm Common"

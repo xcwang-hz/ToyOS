@@ -5,8 +5,6 @@
   <title>ToyOS on Wasm</title>
   <!-- SPDX-License-Identifier: GPL-2.0-only -->
 
-  <script src="xterm.js"></script>
-  <link rel="stylesheet" href="xterm.css" />
   <style>
     body { 
       background: #222; 
@@ -18,26 +16,10 @@
       margin-top: 20px;
     }
     
-    /* Container for the graphics display. Initially hidden (display: none). It becomes visible only
-        if the kernel requests a screen refresh (Graphics Mode).
-    */
-    #screen-container {
-      display: none;
-      border: 10px solid #444;
-      border-radius: 5px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
-      margin-bottom: 20px;
-      background: #000;
-    }
-
     canvas {
       display: block;
     }
 
-    #terminal {
-      width: 800px; /* Match the canvas width */
-    }
-    
     .status {
       color: #aaa;
       margin-bottom: 10px;
@@ -46,18 +28,7 @@
   </style>  
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
-      const term = new Terminal({
-        cursorBlink: true,
-        theme: { background: '#000000' }, // Match container background
-        rows: 34,  // Tuned to fit ~600px height
-        cols: 95,  // Tuned to fit ~800px width
-        fontFamily: 'Consolas, monospace',
-        fontSize: 15
-      });
-      term.open(document.getElementById("terminal"));
-
-      const log = (text) => term.write(("\x1B[2m" + text + "\x1B[0m\n").replaceAll("\n", "\r\n"));
-      const console_write = (data) => term.write(data);  // Pre-decoded UTF-8 data.
+      const log = (text) => console.log(text);
 
       // This is needed for SharedArrayBuffer on modern browsers.
       if (!window.crossOriginIsolated) {
@@ -66,7 +37,6 @@
 
       const canvas = document.getElementById('screen');
       const ctx = canvas.getContext('2d');
-      const screenContainer = document.getElementById('screen-container');      
 
       let wasmMemory;
       function readStringFromMemory(offset) {
@@ -83,19 +53,11 @@
       try {
         const importObject = {
           env: {
-            console_log: (ptr) => {
-              const message = readStringFromMemory(ptr);
-              log(message);
-            },
-                
             // [Graphics Interface]
             canvas_refresh: (ptr, width, height) => {
               // Auto-detection: If this function is called, we are in Graphics Mode.
               // Make the canvas container visible if it isn't already.
-              if (screenContainer.style.display === 'none' || screenContainer.style.display === '') {
-                  screenContainer.style.display = 'block';
-                  log('Graphics signal received. Displaying monitor');
-              }
+              log('Graphics signal received. Displaying monitor');
 
               // Calculate buffer size: Width * Height * 4 bytes (RGBA)
               const bufferSize = width * height * 4;
@@ -127,11 +89,6 @@
 
 <body>
   <div class="status" id="status">Loading ToyOS...</div>
-  <div id="layout-container">
-  <div id="screen-container">
-    <canvas id="screen" width="800" height="600"></canvas>
-  </div>
-  <div id="terminal"></div>
-  </div>
+  <canvas id="screen" width="800" height="600"></canvas>
 </body>
 </html>
