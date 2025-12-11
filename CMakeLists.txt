@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(ToyOS LANGUAGES C CXX ASM)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ------------------------------------------------------------------------------
 # Global Configuration
@@ -16,6 +17,15 @@ set(COMMON_INCLUDES
     ${CMAKE_CURRENT_SOURCE_DIR} 
     ${CMAKE_CURRENT_SOURCE_DIR}/AK 
     ${CMAKE_CURRENT_SOURCE_DIR}/Kernel
+    ${CMAKE_CURRENT_SOURCE_DIR}/Kernel/SharedGraphics
+    ${CMAKE_CURRENT_SOURCE_DIR}/Kernel/Terminal
+)
+
+set(KERNEL_COMMON_SOURCES
+    Kernel/entry.cpp
+    Kernel/Terminal/Terminal.cpp
+    Kernel/SharedGraphics/GraphicsBitmap.cpp
+    Kernel/SharedGraphics/Painter.cpp
 )
 
 # Output directories (matches build/i386 and build/wasm)
@@ -27,7 +37,7 @@ file(MAKE_DIRECTORY ${DIST_I386})
 file(MAKE_DIRECTORY ${DIST_WASM})
 
 set(I386_SOURCES
-    Kernel/entry.cpp
+    ${KERNEL_COMMON_SOURCES}
     arch/i386/boot.S
 )
 
@@ -52,7 +62,7 @@ target_compile_options(toyos_i386 PRIVATE
     -ffreestanding -O2 -Wall -Wextra -std=c++20
     -fno-exceptions -fno-rtti -fno-threadsafe-statics
     -nostdinc -fno-pie
-    -DI386
+    -DI386 -DSERENITY
 )
 
 # 5. Link Options (Matches LDFLAGS_I386)
@@ -110,7 +120,7 @@ add_custom_target(toyos_iso ALL DEPENDS ${ISO_IMAGE})
 # ------------------------------------------------------------------------------
 
 # 1. Define Sources
-set(WASM_SOURCES Kernel/entry.cpp)
+set(WASM_SOURCES ${KERNEL_COMMON_SOURCES})
 
 # 2. Create Executable Target
 add_executable(toyos_wasm ${WASM_SOURCES})
@@ -130,7 +140,7 @@ target_compile_options(toyos_wasm PRIVATE
     -ffreestanding -O2 -Wall -Wextra -std=c++20
     -fno-exceptions -fno-rtti 
     -nostdinc
-    -DWASM
+    -DWASM -DSERENITY
 )
 
 # 5. Link Options (Matches LDFLAGS_WASM)
