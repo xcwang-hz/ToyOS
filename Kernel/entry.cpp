@@ -1,4 +1,6 @@
+#include "Size.h"
 #include <AK/Types.h>
+#include <Terminal.h>
 
 /* * Multiboot Info Structure (Partial definition)
  * We need the framebuffer fields which start at offset 88 (0x58).
@@ -42,5 +44,8 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
     if (!(mbd->flags & (1 << 12)))
         return; // Not in graphics mode
 
-    uint32_t address = (uint32_t)mbd->framebuffer_addr;
+    uint32_t* raw_framebuffer = (uint32_t*)(uint32_t)mbd->framebuffer_addr;
+    Size size(80, 25);
+    Terminal::the().create_window(size, (RGBA32*)raw_framebuffer);
+    Terminal::the().paint();
 }

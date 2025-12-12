@@ -1,10 +1,10 @@
 #include "GraphicsBitmap.h"
-// #include <AK/kmalloc.h>
+#include <AK/kmalloc.h>
 
-// RetainPtr<GraphicsBitmap> GraphicsBitmap::create_wrapper(const Size& size, RGBA32* data)
-// {
-//     return adopt(*new GraphicsBitmap(size, data));
-// }
+RetainPtr<GraphicsBitmap> GraphicsBitmap::create_wrapper(const Size& size, RGBA32* data)
+{
+    return adopt(*new GraphicsBitmap(size, data));
+}
 
 GraphicsBitmap::GraphicsBitmap(const Size& size, RGBA32* data)
     : m_size(size)

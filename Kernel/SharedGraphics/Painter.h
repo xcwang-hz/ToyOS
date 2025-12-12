@@ -3,10 +3,10 @@
 #include "Color.h"
 #include "Point.h"
 #include "Rect.h"
-#include "Size.h"
-// #include <AK/AKString.h>
+// #include "Size.h"
+#include <AK/AKString.h>
 
-class CharacterBitmap;
+// class CharacterBitmap;
 class GraphicsBitmap;
 // class Font;
 
@@ -43,6 +43,6 @@ private:
     // const Font* m_font;
     // Point m_translation;
     // Rect m_clip_rect;
-    // RetainPtr<GraphicsBitmap> m_target;
+    RetainPtr<GraphicsBitmap> m_target;
     // DrawOp m_draw_op { DrawOp::Copy };
 };

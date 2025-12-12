@@ -15,7 +15,7 @@ public:
     Terminal();
     ~Terminal();
 
-    void create_window();
+    void create_window(const Size& size, RGBA32* data);
     void paint();
 //     void on_char(byte);
 
@@ -45,9 +45,9 @@ public:
 
 //     void clear();
 
-//     void set_size(word columns, word rows);
-//     word columns() const { return m_columns; }
-//     word rows() const { return m_rows; }
+    void set_size(word columns, word rows);
+    word columns() const { return m_columns; }
+    word rows() const { return m_rows; }
 //     Rect glyph_rect(word row, word column);
 //     Rect row_rect(word row);
 

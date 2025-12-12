@@ -3,25 +3,41 @@
 #include <Kernel/StdLib.h>
 #include <AK/Types.h>
 
-// ALWAYS_INLINE void fast_dword_copy(dword* dest, const dword* src, size_t count)
-// {
-//     asm volatile(
-//         "rep movsl\n"
-//         : "=S"(src), "=D"(dest), "=c"(count)
-//         : "S"(src), "D"(dest), "c"(count)
-//         : "memory"
-//     );
-// }
+ALWAYS_INLINE void fast_dword_copy(dword* dest, const dword* src, size_t count)
+{
+#if defined(I386)
+    asm volatile(
+        "rep movsl\n"
+        : "=S"(src), "=D"(dest), "=c"(count)
+        : "S"(src), "D"(dest), "c"(count)
+        : "memory"
+    );
+#elif defined(WASM)
+    (void)dest;
+    (void)src;
+    (void)count;
+#else
+    #error "Unknown architecture"
+#endif    
+}
 
-// ALWAYS_INLINE void fast_dword_fill(dword* dest, dword value, size_t count)
-// {
-//     asm volatile(
-//         "rep stosl\n"
-//         : "=D"(dest), "=c"(count)
-//         : "D"(dest), "c"(count), "a"(value)
-//         : "memory"
-//     );
-// }
+ALWAYS_INLINE void fast_dword_fill(dword* dest, dword value, size_t count)
+{
+#if defined(I386)
+    asm volatile(
+        "rep stosl\n"
+        : "=D"(dest), "=c"(count)
+        : "D"(dest), "c"(count), "a"(value)
+        : "memory"
+    );
+#elif defined(WASM)
+    (void)dest;
+    (void)value;
+    (void)count;
+#else
+    #error "Unknown architecture"
+#endif        
+}
 
 namespace AK {
 

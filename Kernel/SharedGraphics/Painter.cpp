@@ -1,13 +1,13 @@
 #include "Painter.h"
 // #include "Font.h"
-// #include "GraphicsBitmap.h"
+#include "GraphicsBitmap.h"
 // #include <AK/Assertions.h>
-// #include <AK/StdLibExtras.h>
+#include <AK/StdLibExtras.h>
 
 Painter::Painter(GraphicsBitmap& bitmap)
 {
     // m_font = &Font::default_font();
-    // m_target = &bitmap;
+    m_target = &bitmap;
     // m_clip_rect = { { 0, 0 }, bitmap.size() };
 }
 
@@ -18,20 +18,20 @@ Painter::~Painter()
 
 void Painter::fill_rect(const Rect& a_rect, Color color)
 {
-    // auto rect = a_rect;
+    auto rect = a_rect;
     // rect.move_by(m_translation);
     // rect.intersect(m_clip_rect);
 
-    // if (rect.is_empty())
-    //     return;
+    if (rect.is_empty())
+        return;
 
-    // RGBA32* dst = m_target->scanline(rect.top()) + rect.left();
-    // const unsigned dst_skip = m_target->width();
+    RGBA32* dst = m_target->scanline(rect.top()) + rect.left();
+    const unsigned dst_skip = m_target->width();
 
-    // for (int i = rect.height() - 1; i >= 0; --i) {
-    //     fast_dword_fill(dst, color.value(), rect.width());
-    //     dst += dst_skip;
-    // }
+    for (int i = rect.height() - 1; i >= 0; --i) {
+        fast_dword_fill(dst, color.value(), rect.width());
+        dst += dst_skip;
+    }
 }
 
 // void Painter::fill_rect_with_gradient(const Rect& a_rect, Color gradient_start, Color gradient_end)

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Color.h"
-// #include "Rect.h"
+#include "Rect.h"
 #include "Size.h"
 #include <AK/Retainable.h>
 #include <AK/RetainPtr.h>
@@ -11,8 +11,8 @@ public:
     static RetainPtr<GraphicsBitmap> create_wrapper(const Size&, RGBA32*);
     ~GraphicsBitmap();
 
-    // RGBA32* scanline(int y);
-    // const RGBA32* scanline(int y) const;
+    RGBA32* scanline(int y);
+    const RGBA32* scanline(int y) const;
 
     // Rect rect() const { return { {}, m_size }; }
     Size size() const { return m_size; }
@@ -39,12 +39,12 @@ private:
 // #endif
 };
 
-// inline RGBA32* GraphicsBitmap::scanline(int y)
-// {
-//     return reinterpret_cast<RGBA32*>((((byte*)m_data) + (y * m_pitch)));
-// }
+inline RGBA32* GraphicsBitmap::scanline(int y)
+{
+    return reinterpret_cast<RGBA32*>((((byte*)m_data) + (y * m_pitch)));
+}
 
-// inline const RGBA32* GraphicsBitmap::scanline(int y) const
-// {
-//     return reinterpret_cast<const RGBA32*>((((const byte*)m_data) + (y * m_pitch)));
-// }
+inline const RGBA32* GraphicsBitmap::scanline(int y) const
+{
+    return reinterpret_cast<const RGBA32*>((((const byte*)m_data) + (y * m_pitch)));
+}

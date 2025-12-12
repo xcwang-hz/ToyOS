@@ -17,10 +17,12 @@ Terminal& Terminal::the()
     return *t_the;
 }
 
-void Terminal::create_window()
+void Terminal::create_window(const Size& size, RGBA32* data)
 {
 //     m_pixel_width = m_columns * font().glyph_width() + m_inset * 2;
 //     m_pixel_height = (m_rows * (font().glyph_height() + m_line_spacing)) + (m_inset * 2) - m_line_spacing;
+    m_pixel_width = 300;
+    m_pixel_height = 100;
 
 //     GUI_WindowParameters params;
 //     params.rect = { { 300, 300 }, { m_pixel_width, m_pixel_height } };
@@ -41,7 +43,7 @@ void Terminal::create_window()
 //         exit(1);
 //     }
 
-    // m_backing = GraphicsBitmap::create_wrapper(info.size, info.pixels);
+    m_backing = GraphicsBitmap::create_wrapper(size, data);
 //     dbgprintf("(Terminal:%d) window backing %ux%u @ %p\n", getpid(), info.size.width, info.size.height, info.pixels);
 
 }
@@ -49,9 +51,10 @@ void Terminal::create_window()
 Terminal::Terminal()
     // : m_font(Font::default_font())
 {
+    t_the = this;
     // m_line_height = font().glyph_height() + m_line_spacing;
 
-    // set_size(80, 25);
+    set_size(80, 25);
     // m_horizontal_tabs = static_cast<byte*>(malloc(columns()));
     // for (unsigned i = 0; i < columns(); ++i)
     //     m_horizontal_tabs[i] = (i % 8) == 0;
@@ -537,11 +540,11 @@ Terminal::Terminal()
 //     }
 // }
 
-// void Terminal::set_size(word columns, word rows)
-// {
-//     m_columns = columns;
-//     m_rows = rows;
-// }
+void Terminal::set_size(word columns, word rows)
+{
+    m_columns = columns;
+    m_rows = rows;
+}
 
 // Rect Terminal::glyph_rect(word row, word column)
 // {
@@ -580,6 +583,7 @@ void Terminal::paint()
 {
     Rect rect { 0, 0, m_pixel_width, m_pixel_height };
     Painter painter(*m_backing);
+    painter.fill_rect(rect, Color::Red);
 
     // for (size_t i = 0; i < rows(); ++i)
     //     line(i).did_paint = false;

@@ -23,7 +23,9 @@ set(COMMON_INCLUDES
 
 set(KERNEL_COMMON_SOURCES
     Kernel/entry.cpp
+    Kernel/kmalloc.cpp
     Kernel/Terminal/Terminal.cpp
+    Kernel/SharedGraphics/Color.cpp
     Kernel/SharedGraphics/GraphicsBitmap.cpp
     Kernel/SharedGraphics/Painter.cpp
 )
@@ -62,7 +64,7 @@ target_compile_options(toyos_i386 PRIVATE
     -ffreestanding -O2 -Wall -Wextra -std=c++20
     -fno-exceptions -fno-rtti -fno-threadsafe-statics
     -nostdinc -fno-pie
-    -DI386 -DSERENITY
+    -DI386 -DSERENITY -DKERNEL
 )
 
 # 5. Link Options (Matches LDFLAGS_I386)
@@ -140,7 +142,7 @@ target_compile_options(toyos_wasm PRIVATE
     -ffreestanding -O2 -Wall -Wextra -std=c++20
     -fno-exceptions -fno-rtti 
     -nostdinc
-    -DWASM -DSERENITY
+    -DWASM -DSERENITY -DKERNEL
 )
 
 # 5. Link Options (Matches LDFLAGS_WASM)
@@ -166,7 +168,7 @@ add_custom_command(TARGET toyos_wasm POST_BUILD
 
 # Target: make runq (Run QEMU)
 add_custom_target(runq 
-    COMMAND qemu-system-i386 -cdrom ${ISO_IMAGE} -vga std
+    COMMAND qemu-system-i386 -cdrom ${ISO_IMAGE} -vga std -debugcon file:debug.log
     DEPENDS toyos_iso
     USES_TERMINAL
     COMMENT "Starting QEMU..."
