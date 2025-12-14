@@ -1,14 +1,15 @@
 #include "Painter.h"
-// #include "Font.h"
+#include "Font.h"
 #include "GraphicsBitmap.h"
 // #include <AK/Assertions.h>
 #include <AK/StdLibExtras.h>
+#include "kprintf.h"
 
 Painter::Painter(GraphicsBitmap& bitmap)
 {
     // m_font = &Font::default_font();
     m_target = &bitmap;
-    // m_clip_rect = { { 0, 0 }, bitmap.size() };
+    m_clip_rect = { { 0, 0 }, bitmap.size() };
 }
 
 Painter::~Painter()
@@ -19,8 +20,8 @@ Painter::~Painter()
 void Painter::fill_rect(const Rect& a_rect, Color color)
 {
     auto rect = a_rect;
-    // rect.move_by(m_translation);
-    // rect.intersect(m_clip_rect);
+    rect.move_by(m_translation);
+    rect.intersect(m_clip_rect);
 
     if (rect.is_empty())
         return;
@@ -115,37 +116,41 @@ void Painter::fill_rect(const Rect& a_rect, Color color)
 //     }
 // }
 
-// void Painter::draw_bitmap(const Point& p, const CharacterBitmap& bitmap, Color color)
-// {
-//     Rect rect { p, bitmap.size() };
-//     rect.move_by(m_translation);
-//     auto clipped_rect = Rect::intersection(rect, m_clip_rect);
-//     if (clipped_rect.is_empty())
-//         return;
-//     const int first_row = clipped_rect.top() - rect.top();
-//     const int last_row = clipped_rect.bottom() - rect.top();
-//     const int first_column = clipped_rect.left() - rect.left();
-//     const int last_column = clipped_rect.right() - rect.left();
-//     RGBA32* dst = m_target->scanline(clipped_rect.y()) + clipped_rect.x();
-//     const size_t dst_skip = m_target->width();
-//     const char* bitmap_row = &bitmap.bits()[first_row * bitmap.width() + first_column];
-//     const size_t bitmap_skip = bitmap.width();
+void Painter::draw_bitmap(const Point& p, const CharacterBitmap& bitmap, Color color)
+{
+    Rect rect { p, bitmap.size() };
+    rect.move_by(m_translation);
+    auto clipped_rect = Rect::intersection(rect, m_clip_rect);
+    dbgprintf("rect: x=%d, y=%d, w=%d, h=%d\n", rect.x(), rect.y(), rect.width(), rect.height());
+    dbgprintf("clip: x=%d, y=%d, w=%d, h=%d\n", m_clip_rect.x(), m_clip_rect.y(), m_clip_rect.width(), m_clip_rect.width());
+    if (clipped_rect.is_empty())
+        return;
 
-//     for (int row = first_row; row <= last_row; ++row) {
-//         for (int j = 0; j <= (last_column - first_column); ++j) {
-//             char fc = bitmap_row[j];
-//             if (fc == '#')
-//                 dst[j] = color.value();
-//         }
-//         bitmap_row += bitmap_skip;
-//         dst += dst_skip;
-//     }
-// }
+    //dbgprintf("ToyOS2");
+    const int first_row = clipped_rect.top() - rect.top();
+    const int last_row = clipped_rect.bottom() - rect.top();
+    const int first_column = clipped_rect.left() - rect.left();
+    const int last_column = clipped_rect.right() - rect.left();
+    RGBA32* dst = m_target->scanline(clipped_rect.y()) + clipped_rect.x();
+    const size_t dst_skip = m_target->width();
+    const char* bitmap_row = &bitmap.bits()[first_row * bitmap.width() + first_column];
+    const size_t bitmap_skip = bitmap.width();
 
-// FLATTEN void Painter::draw_glyph(const Point& point, char ch, Color color)
-// {
-//     draw_bitmap(point, font().glyph_bitmap(ch), color);
-// }
+    for (int row = first_row; row <= last_row; ++row) {
+        for (int j = 0; j <= (last_column - first_column); ++j) {
+            char fc = bitmap_row[j];
+            if (fc == '#')
+                dst[j] = color.value();
+        }
+        bitmap_row += bitmap_skip;
+        dst += dst_skip;
+    }
+}
+
+FLATTEN void Painter::draw_glyph(const Point& point, char ch, Color color)
+{
+    draw_bitmap(point, font().glyph_bitmap(ch), color);
+}
 
 // void Painter::draw_text(const Rect& rect, const String& text, TextAlignment alignment, Color color)
 // {

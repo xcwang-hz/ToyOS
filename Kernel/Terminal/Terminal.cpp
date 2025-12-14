@@ -1,12 +1,13 @@
 #include "Terminal.h"
 // #include <AK/AKString.h>
-// #include <SharedGraphics/Font.h>
+#include <SharedGraphics/Font.h>
 #include <SharedGraphics/Painter.h>
 // #include <AK/StdLibExtras.h>
 // #include <LibC/stdlib.h>
 // #include <LibC/unistd.h>
 // #include <LibC/stdio.h>
 // #include <LibC/gui.h>
+#include "kprintf.h"
 
 //#define TERMINAL_DEBUG
 
@@ -14,15 +15,14 @@ static Terminal* t_the;
 Terminal& Terminal::the()
 {
     // ASSERT(t_the);
+    t_the = new Terminal();
     return *t_the;
 }
 
 void Terminal::create_window(const Size& size, RGBA32* data)
 {
-//     m_pixel_width = m_columns * font().glyph_width() + m_inset * 2;
-//     m_pixel_height = (m_rows * (font().glyph_height() + m_line_spacing)) + (m_inset * 2) - m_line_spacing;
-    m_pixel_width = 300;
-    m_pixel_height = 100;
+    m_pixel_width = m_columns * font().glyph_width() + m_inset * 2;
+    m_pixel_height = (m_rows * (font().glyph_height() + m_line_spacing)) + (m_inset * 2) - m_line_spacing;
 
 //     GUI_WindowParameters params;
 //     params.rect = { { 300, 300 }, { m_pixel_width, m_pixel_height } };
@@ -49,10 +49,11 @@ void Terminal::create_window(const Size& size, RGBA32* data)
 }
 
 Terminal::Terminal()
-    // : m_font(Font::default_font())
+    : m_font(Font::default_font())
 {
     t_the = this;
-    // m_line_height = font().glyph_height() + m_line_spacing;
+    m_line_height = font().glyph_height() + m_line_spacing;
+    dbgprintf("m_line_spacing = %d, m_line_height = %d\n", m_line_spacing, m_line_height);
 
     set_size(80, 25);
     // m_horizontal_tabs = static_cast<byte*>(malloc(columns()));
@@ -153,28 +154,28 @@ Terminal::Terminal()
 //     White,
 // };
 
-// static inline Color ansi_color(unsigned color)
-// {
-//     static const RGBA32 s_ansi_color[16] = {
-//         make_rgb(0, 0, 0),          // Black
-//         make_rgb(225, 56, 43),      // Red
-//         make_rgb(57, 181, 74),      // Green
-//         make_rgb(255, 199, 6),      // Brown
-//         make_rgb(0, 111, 184),      // Blue
-//         make_rgb(118, 38, 113),     // Magenta
-//         make_rgb(44, 181, 233),     // Cyan
-//         make_rgb(204, 204, 204),    // LightGray
-//         make_rgb(128, 128, 128),    // DarkGray
-//         make_rgb(255, 0, 0),        // BrightRed
-//         make_rgb(0, 255, 0),        // BrightGreen
-//         make_rgb(255, 255, 0),      // Yellow
-//         make_rgb(0, 0, 255),        // BrightBlue
-//         make_rgb(255, 0, 255),      // BrightMagenta
-//         make_rgb(0, 255, 255),      // BrightCyan
-//         make_rgb(255, 255, 255),    // White
-//     };
-//     return s_ansi_color[color];
-// }
+static inline Color ansi_color(unsigned color)
+{
+    static const RGBA32 s_ansi_color[16] = {
+        make_rgb(0, 0, 0),          // Black
+        make_rgb(225, 56, 43),      // Red
+        make_rgb(57, 181, 74),      // Green
+        make_rgb(255, 199, 6),      // Brown
+        make_rgb(0, 111, 184),      // Blue
+        make_rgb(118, 38, 113),     // Magenta
+        make_rgb(44, 181, 233),     // Cyan
+        make_rgb(204, 204, 204),    // LightGray
+        make_rgb(128, 128, 128),    // DarkGray
+        make_rgb(255, 0, 0),        // BrightRed
+        make_rgb(0, 255, 0),        // BrightGreen
+        make_rgb(255, 255, 0),      // Yellow
+        make_rgb(0, 0, 255),        // BrightBlue
+        make_rgb(255, 0, 255),      // BrightMagenta
+        make_rgb(0, 255, 255),      // BrightCyan
+        make_rgb(255, 255, 255),    // White
+    };
+    return s_ansi_color[color];
+}
 
 // void Terminal::escape$m(const Vector<unsigned>& params)
 // {
@@ -421,20 +422,20 @@ Terminal::Terminal()
 //     invalidate_cursor();
 // }
 
-// void Terminal::put_character_at(unsigned row, unsigned column, byte ch)
-// {
-//     ASSERT(row < rows());
-//     ASSERT(column < columns());
-//     line(row).characters[column] = ch;
-//     line(row).attributes[column] = m_current_attribute;
-// }
+void Terminal::put_character_at(unsigned row, unsigned column, byte ch)
+{
+    // ASSERT(row < rows());
+    // ASSERT(column < columns());
+    line(row).characters[column] = ch;
+    line(row).attributes[column] = m_current_attribute;
+}
 
-// void Terminal::on_char(byte ch)
-// {
+void Terminal::on_char(byte ch)
+{
 // #ifdef TERMINAL_DEBUG
 //     dbgprintf("Terminal::on_char: %b (%c)\n", ch, ch);
 // #endif
-//     switch (m_escape_state) {
+    switch (m_escape_state) {
 //     case ExpectBracket:
 //         if (ch == '[')
 //             m_escape_state = ExpectParameter;
@@ -485,9 +486,9 @@ Terminal::Terminal()
 //         }
 //         m_escape_state = Normal;
 //         return;
-//     case Normal:
-//         break;
-//     }
+    case Normal:
+        break;
+    }
 
 //     switch (ch) {
 //     case '\0':
@@ -522,9 +523,9 @@ Terminal::Terminal()
 //         return;
 //     }
 
-//     auto new_column = m_cursor_column + 1;
-//     if (new_column < columns()) {
-//         put_character_at(m_cursor_row, m_cursor_column, ch);
+    auto new_column = m_cursor_column + 1;
+    if (new_column < columns()) {
+        put_character_at(m_cursor_row, m_cursor_column, ch);
 //         set_cursor(m_cursor_row, new_column);
 //     } else {
 //         if (m_stomp) {
@@ -537,8 +538,8 @@ Terminal::Terminal()
 //             m_stomp = true;
 //             put_character_at(m_cursor_row, m_cursor_column, ch);
 //         }
-//     }
-// }
+    }
+}
 
 void Terminal::set_size(word columns, word rows)
 {
@@ -546,12 +547,14 @@ void Terminal::set_size(word columns, word rows)
     m_rows = rows;
 }
 
-// Rect Terminal::glyph_rect(word row, word column)
-// {
-//     int y = row * m_line_height;
-//     int x = column * font().glyph_width();
-//     return { x + m_inset, y + m_inset, font().glyph_width(), font().glyph_height() };
-// }
+Rect Terminal::glyph_rect(word row, word column)
+{
+    int y = row * m_line_height;
+    int x = column * font().glyph_width();
+
+    dbgprintf("row = %d, column = %d, glyph_widht = %d, m_inset = %d\n", (int)row, (int)column, (int)font().glyph_width(), m_inset);
+    return { x + m_inset, y + m_inset, font().glyph_width(), font().glyph_height() };
+}
 
 // Rect Terminal::row_rect(word row)
 // {
@@ -581,9 +584,9 @@ void Terminal::set_size(word columns, word rows)
 
 void Terminal::paint()
 {
-    Rect rect { 0, 0, m_pixel_width, m_pixel_height };
+    Rect rect { m_backing->width()/2, 0, m_backing->width()/2, m_backing->height()/2 };
     Painter painter(*m_backing);
-    painter.fill_rect(rect, Color::Red);
+    painter.fill_rect(rect, Color::MidGray);
 
     // for (size_t i = 0; i < rows(); ++i)
     //     line(i).did_paint = false;
@@ -603,28 +606,29 @@ void Terminal::paint()
     // }
     // m_rows_to_scroll_backing_store = 0;
 
-    // for (word row = 0; row < m_rows; ++row) {
-    //     auto& line = this->line(row);
+    for (word row = 0; row < m_rows; ++row) {
+        auto& line = this->line(row);
     //     if (!line.dirty)
     //         continue;
     //     line.dirty = false;
     //     bool has_only_one_background_color = line.has_only_one_background_color();
     //     if (has_only_one_background_color)
     //         painter.fill_rect(row_rect(row), line.attributes[0].background_color);
-    //     for (word column = 0; column < m_columns; ++column) {
-    //         auto& attribute = line.attributes[column];
+        
+        for (word column = 0; column < m_columns; ++column) {
+            auto& attribute = line.attributes[column];
     //         line.did_paint = true;
-    //         char ch = line.characters[column];
-    //         auto character_rect = glyph_rect(row, column);
+            char ch = line.characters[column];
+            auto character_rect = glyph_rect(row, column);
     //         if (!has_only_one_background_color) {
     //             auto character_background = ansi_color(attribute.background_color);
     //             painter.fill_rect(character_rect, character_background);
     //         }
     //         if (ch == ' ')
     //             continue;
-    //         painter.draw_glyph(character_rect.location(), ch, ansi_color(attribute.foreground_color));
-    //     }
-    // }
+            painter.draw_glyph(character_rect.location(), ch, ansi_color(attribute.foreground_color));
+        }
+    }
 
     // auto cursor_rect = glyph_rect(m_cursor_row, m_cursor_column);
     // if (m_in_active_window)

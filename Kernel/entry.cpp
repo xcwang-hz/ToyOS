@@ -45,7 +45,12 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         return; // Not in graphics mode
 
     uint32_t* raw_framebuffer = (uint32_t*)(uint32_t)mbd->framebuffer_addr;
-    Size size(80, 25);
+    Size size(mbd->framebuffer_width, mbd->framebuffer_height);
     Terminal::the().create_window(size, (RGBA32*)raw_framebuffer);
+    Terminal::the().on_char('T');
+    Terminal::the().on_char('o');
+    Terminal::the().on_char('y');
+    Terminal::the().on_char('O');
+    Terminal::the().on_char('S');
     Terminal::the().paint();
 }

@@ -7,7 +7,7 @@
 .set CHECKSUM, -(MAGIC + FLAGS)
 
 /* Declare constants for the multiboot header */
-.section .text.multiboot
+.section .multiboot, "a", @progbits
 .align 4
 .long MAGIC
 .long FLAGS

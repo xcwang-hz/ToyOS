@@ -19,15 +19,21 @@ set(COMMON_INCLUDES
     ${CMAKE_CURRENT_SOURCE_DIR}/Kernel
     ${CMAKE_CURRENT_SOURCE_DIR}/Kernel/SharedGraphics
     ${CMAKE_CURRENT_SOURCE_DIR}/Kernel/Terminal
+    ${CMAKE_CURRENT_SOURCE_DIR}/LibC
+    ${CMAKE_CURRENT_SOURCE_DIR}/LibC/sys
 )
 
 set(KERNEL_COMMON_SOURCES
     Kernel/entry.cpp
     Kernel/kmalloc.cpp
-    Kernel/Terminal/Terminal.cpp
+    Kernel/kprintf.cpp
+    Kernel/SharedGraphics/CharacterBitmap.cpp
     Kernel/SharedGraphics/Color.cpp
+    Kernel/SharedGraphics/Font.cpp
     Kernel/SharedGraphics/GraphicsBitmap.cpp
     Kernel/SharedGraphics/Painter.cpp
+    Kernel/SharedGraphics/Rect.cpp
+    Kernel/Terminal/Terminal.cpp
 )
 
 # Output directories (matches build/i386 and build/wasm)
@@ -39,8 +45,8 @@ file(MAKE_DIRECTORY ${DIST_I386})
 file(MAKE_DIRECTORY ${DIST_WASM})
 
 set(I386_SOURCES
-    ${KERNEL_COMMON_SOURCES}
     arch/i386/boot.S
+    ${KERNEL_COMMON_SOURCES}
 )
 
 add_executable(toyos_i386 ${I386_SOURCES})

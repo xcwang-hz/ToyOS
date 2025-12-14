@@ -1,0 +1,12 @@
+CompileFlags:
+  Add:
+    - "-IKernel"
+    - "-I."
+
+    - "-include"
+    - "stddef.h"
+    - "-include"
+    - "stdarg.h"
+
+    - "-Wsign-conversion"
+    - "-Wconversion"
