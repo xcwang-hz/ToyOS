@@ -123,7 +123,6 @@ void Painter::draw_bitmap(const Point& p, const CharacterBitmap& bitmap, Color c
     if (clipped_rect.is_empty())
         return;
 
-    //dbgprintf("ToyOS2");
     const int first_row = clipped_rect.top() - rect.top();
     const int last_row = clipped_rect.bottom() - rect.top();
     const int first_column = clipped_rect.left() - rect.left();

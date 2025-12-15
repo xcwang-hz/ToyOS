@@ -1,6 +1,7 @@
 #include "Size.h"
 #include <AK/Types.h>
 #include <Terminal.h>
+#include "kprintf.h"
 
 /* * Multiboot Info Structure (Partial definition)
  * We need the framebuffer fields which start at offset 88 (0x58).
@@ -37,20 +38,46 @@ struct multiboot_info_t {
     uint8_t  framebuffer_type;
 };
 
+#ifdef WASM
+    const int SCREEN_WIDTH = 800;
+    const int SCREEN_HEIGHT = 600;
+    // Static buffer for Wasm
+    uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+    extern "C" void canvas_refresh(uint32_t* ptr, int width, int height);
+#endif
+
 extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
+#ifdef I386
     if (magic != 0x2BADB002)
         return; // Not Multiboot
-
     if (!(mbd->flags & (1 << 12)))
         return; // Not in graphics mode
 
-    uint32_t* raw_framebuffer = (uint32_t*)(uint32_t)mbd->framebuffer_addr;
-    Size size(mbd->framebuffer_width, mbd->framebuffer_height);
-    Terminal::the().create_window(size, (RGBA32*)raw_framebuffer);
+    int w = mbd->framebuffer_width;
+    int h = mbd->framebuffer_height;        
+#else
+    (void)magic;
+    (void)mbd;
+    int w = SCREEN_WIDTH;
+    int h = SCREEN_HEIGHT;    
+#endif        
+
+    Size size(w, h);
+#ifdef I386    
+    RGBA32* fb_ptr = (RGBA32*)((uint32_t)mbd->framebuffer_addr);
+#else
+    RGBA32* fb_ptr = (RGBA32*)wasm_framebuffer;
+#endif        
+
+    dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
+    Terminal::the().create_window(size, fb_ptr);
     Terminal::the().on_char('T');
     Terminal::the().on_char('o');
     Terminal::the().on_char('y');
     Terminal::the().on_char('O');
     Terminal::the().on_char('S');
     Terminal::the().paint();
+#ifdef WASM
+    canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+#endif    
 }

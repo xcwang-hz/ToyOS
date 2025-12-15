@@ -6,6 +6,10 @@
 #include <AK/Types.h>
 #include <AK/printf.cpp>
 
+#ifdef WASM
+    extern "C" void js_debug_char(char c);
+#endif
+
 // static void console_putch(char*&, char ch)
 // {
 //     Console::the().write(*current, (byte*)&ch, 1);
@@ -37,7 +41,11 @@
 
 static void debugger_putch(char*&, char ch)
 {
+#ifdef I386
     IO::out8(0xe9, ch);
+#elif defined(WASM)
+    js_debug_char(ch);
+#endif    
 }
 
 extern "C" int dbgprintf(const char* fmt, ...)

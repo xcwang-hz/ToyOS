@@ -158,6 +158,8 @@ target_link_options(toyos_wasm PRIVATE
     -Wl,--no-entry
     -Wl,--export=kernel_entry
     -Wl,--allow-undefined
+    [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!
+    -Wl,--import-memory
     -fuse-ld=lld
 )
 

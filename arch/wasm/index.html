@@ -38,26 +38,22 @@
       const canvas = document.getElementById('screen');
       const ctx = canvas.getContext('2d');
 
-      let wasmMemory;
-      function readStringFromMemory(offset) {
-        if (!wasmMemory) return "";
-        const buffer = new Uint8Array(wasmMemory.buffer);
-        
-        let i = offset;
-        while (buffer[i] !== 0) 
-          i++;
-        const bytes = buffer.subarray(offset, i);
-        return new TextDecoder("utf-8").decode(bytes);
-      }
+      let debugLineBuffer = "";
+      // initial: 256 pages = 16MB
+      // maximum: 256 pages = 16MB
+      const wasmMemory = new WebAssembly.Memory({ initial: 256, maximum: 256 });
 
       try {
         const importObject = {
           env: {
+            memory: wasmMemory,
+
             // [Graphics Interface]
             canvas_refresh: (ptr, width, height) => {
               // Auto-detection: If this function is called, we are in Graphics Mode.
               // Make the canvas container visible if it isn't already.
-              log('Graphics signal received. Displaying monitor');
+              console.log('Graphics signal received. Displaying monitor');
+              console.log("JS received ptr:", ptr, "(Hex: 0x" + ptr.toString(16) + ")");
 
               // Calculate buffer size: Width * Height * 4 bytes (RGBA)
               const bufferSize = width * height * 4;
@@ -69,6 +65,16 @@
               // Create ImageData and draw it to the canvas
               const imgData = new ImageData(dataArray, width, height);
               ctx.putImageData(imgData, 0, 0);
+            },
+
+            js_debug_char: (ch) => {
+              if (ch === 10) { // '\n' is 10
+                console.log(`%c[ToyOS] ${debugLineBuffer}`, "color: #00AAFF");
+                debugLineBuffer = "";
+              } 
+              else if (ch !== 13) {
+                debugLineBuffer += String.fromCharCode(ch);
+              }                
             }
           }
         };
@@ -76,7 +82,6 @@
         WebAssembly.instantiateStreaming(fetch("toyos.wasm"), importObject)
           .then(obj => {
               const kernel = obj.instance;
-              wasmMemory = kernel.exports.memory;
               kernel.exports.kernel_entry(0, 0); 
           });        
       } catch (error) {
