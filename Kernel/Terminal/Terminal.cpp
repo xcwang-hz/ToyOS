@@ -7,7 +7,6 @@
 // #include <LibC/unistd.h>
 // #include <LibC/stdio.h>
 // #include <LibC/gui.h>
-#include "kprintf.h"
 
 //#define TERMINAL_DEBUG
 
@@ -15,7 +14,8 @@ static Terminal* t_the;
 Terminal& Terminal::the()
 {
     // ASSERT(t_the);
-    t_the = new Terminal();
+    if (!t_the)
+        t_the = new Terminal();
     return *t_the;
 }
 
@@ -53,7 +53,6 @@ Terminal::Terminal()
 {
     t_the = this;
     m_line_height = font().glyph_height() + m_line_spacing;
-    dbgprintf("m_line_spacing = %d, m_line_height = %d\n", m_line_spacing, m_line_height);
 
     set_size(80, 25);
     // m_horizontal_tabs = static_cast<byte*>(malloc(columns()));
@@ -62,19 +61,19 @@ Terminal::Terminal()
     // // Rightmost column is always last tab on line.
     // m_horizontal_tabs[columns() - 1] = 1;
 
-    // m_lines = new Line*[rows()];
-    // for (size_t i = 0; i < rows(); ++i)
-    //     m_lines[i] = new Line(columns());
+    m_lines = new Line*[rows()];
+    for (size_t i = 0; i < rows(); ++i)
+        m_lines[i] = new Line(columns());
 }
 
-// Terminal::Line::Line(word columns)
-//     : length(columns)
-// {
-//     characters = new byte[length];
-//     attributes = new Attribute[length];
-//     did_paint = false;
-//     memset(characters, ' ', length);
-// }
+Terminal::Line::Line(word columns)
+    : length(columns)
+{
+    characters = new byte[length];
+    attributes = new Attribute[length];
+    did_paint = false;
+    memset(characters, ' ', length);
+}
 
 // Terminal::Line::~Line()
 // {
@@ -82,13 +81,13 @@ Terminal::Terminal()
 //     delete [] attributes;
 // }
 
-// void Terminal::Line::clear()
-// {
-//     dirty = true;
-//     memset(characters, ' ', length);
-//     for (word i = 0 ; i < length; ++i)
-//         attributes[i].reset();
-// }
+void Terminal::Line::clear()
+{
+    dirty = true;
+    memset(characters, ' ', length);
+    for (word i = 0 ; i < length; ++i)
+        attributes[i].reset();
+}
 
 // Terminal::~Terminal()
 // {
@@ -98,12 +97,12 @@ Terminal::Terminal()
 //     // free(m_horizontal_tabs);
 // }
 
-// void Terminal::clear()
-// {
-//     for (size_t i = 0; i < rows(); ++i)
-//         line(i).clear();
-//     set_cursor(0, 0);
-// }
+void Terminal::clear()
+{
+    for (size_t i = 0; i < rows(); ++i)
+        line(i).clear();
+    set_cursor(0, 0);
+}
 
 // inline bool is_valid_parameter_character(byte ch)
 // {
@@ -408,19 +407,19 @@ static inline Color ansi_color(unsigned color)
 //     set_cursor(new_row, 0);
 // }
 
-// void Terminal::set_cursor(unsigned row, unsigned column)
-// {
-//     if (row == m_cursor_row && column == m_cursor_column)
-//         return;
-//     ASSERT(row < rows());
-//     ASSERT(column < columns());
-//     invalidate_cursor();
-//     m_cursor_row = row;
-//     m_cursor_column = column;
-//     if (column != columns() - 1)
-//         m_stomp = false;
-//     invalidate_cursor();
-// }
+void Terminal::set_cursor(unsigned row, unsigned column)
+{
+    if (row == m_cursor_row && column == m_cursor_column)
+        return;
+    // ASSERT(row < rows());
+    // ASSERT(column < columns());
+    invalidate_cursor();
+    m_cursor_row = row;
+    m_cursor_column = column;
+    if (column != columns() - 1)
+        m_stomp = false;
+    invalidate_cursor();
+}
 
 void Terminal::put_character_at(unsigned row, unsigned column, byte ch)
 {
@@ -526,8 +525,8 @@ void Terminal::on_char(byte ch)
     auto new_column = m_cursor_column + 1;
     if (new_column < columns()) {
         put_character_at(m_cursor_row, m_cursor_column, ch);
-//         set_cursor(m_cursor_row, new_column);
-//     } else {
+        set_cursor(m_cursor_row, new_column);
+    } else {
 //         if (m_stomp) {
 //             m_stomp = false;
 //             scroll_up();
@@ -552,7 +551,6 @@ Rect Terminal::glyph_rect(word row, word column)
     int y = row * m_line_height;
     int x = column * font().glyph_width();
 
-    dbgprintf("row = %d, column = %d, glyph_widht = %d, m_inset = %d\n", (int)row, (int)column, (int)font().glyph_width(), m_inset);
     return { x + m_inset, y + m_inset, font().glyph_width(), font().glyph_height() };
 }
 
@@ -584,12 +582,12 @@ Rect Terminal::glyph_rect(word row, word column)
 
 void Terminal::paint()
 {
-    Rect rect { m_backing->width()/2, 0, m_backing->width()/2, m_backing->height()/2 };
+    Rect rect { 0, 0, m_pixel_width, m_pixel_height };
     Painter painter(*m_backing);
     painter.fill_rect(rect, Color::MidGray);
 
-    // for (size_t i = 0; i < rows(); ++i)
-    //     line(i).did_paint = false;
+    for (size_t i = 0; i < rows(); ++i)
+        line(i).did_paint = false;
 
     // if (m_rows_to_scroll_backing_store && m_rows_to_scroll_backing_store < m_rows) {
     //     int first_scanline = m_inset;
@@ -608,35 +606,35 @@ void Terminal::paint()
 
     for (word row = 0; row < m_rows; ++row) {
         auto& line = this->line(row);
-    //     if (!line.dirty)
-    //         continue;
-    //     line.dirty = false;
+        if (!line.dirty)
+            continue;
+        line.dirty = false;
     //     bool has_only_one_background_color = line.has_only_one_background_color();
     //     if (has_only_one_background_color)
     //         painter.fill_rect(row_rect(row), line.attributes[0].background_color);
         
         for (word column = 0; column < m_columns; ++column) {
             auto& attribute = line.attributes[column];
-    //         line.did_paint = true;
+            line.did_paint = true;
             char ch = line.characters[column];
             auto character_rect = glyph_rect(row, column);
     //         if (!has_only_one_background_color) {
     //             auto character_background = ansi_color(attribute.background_color);
     //             painter.fill_rect(character_rect, character_background);
     //         }
-    //         if (ch == ' ')
-    //             continue;
+            if (ch == ' ')
+                continue;
             painter.draw_glyph(character_rect.location(), ch, ansi_color(attribute.foreground_color));
         }
     }
 
-    // auto cursor_rect = glyph_rect(m_cursor_row, m_cursor_column);
+    auto cursor_rect = glyph_rect(m_cursor_row, m_cursor_column);
     // if (m_in_active_window)
-    //     painter.fill_rect(cursor_rect, Color::MidGray);
+        painter.fill_rect(cursor_rect, Color::MidGray);
     // else
     //     painter.draw_rect(cursor_rect, Color::MidGray);
 
-    // line(m_cursor_row).did_paint = true;
+    line(m_cursor_row).did_paint = true;
 
     // if (m_belling) {
     //     m_need_full_invalidation = true;
@@ -700,7 +698,7 @@ void Terminal::paint()
 //     update();
 // }
 
-// void Terminal::invalidate_cursor()
-// {
-//     line(m_cursor_row).dirty = true;
-// }
+void Terminal::invalidate_cursor()
+{
+    line(m_cursor_row).dirty = true;
+}

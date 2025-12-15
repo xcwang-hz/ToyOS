@@ -24,6 +24,7 @@ set(COMMON_INCLUDES
 )
 
 set(KERNEL_COMMON_SOURCES
+    Kernel/StdLib.cpp
     Kernel/entry.cpp
     Kernel/kmalloc.cpp
     Kernel/kprintf.cpp

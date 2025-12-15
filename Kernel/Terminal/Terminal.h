@@ -25,9 +25,9 @@ public:
 private:
     Font& font() { return *m_font; }
 //     void scroll_up();
-//     void set_cursor(unsigned row, unsigned column);
+    void set_cursor(unsigned row, unsigned column);
     void put_character_at(unsigned row, unsigned column, byte ch);
-//     void invalidate_cursor();
+    void invalidate_cursor();
 //     void did_paint(const Rect& = Rect());
 //     void invalidate_window(const Rect& = Rect());
 //     void set_window_title(const String&);
@@ -43,7 +43,7 @@ private:
 //     void escape$s(const Vector<unsigned>&);
 //     void escape$u(const Vector<unsigned>&);
 
-//     void clear();
+    void clear();
 
     void set_size(word columns, word rows);
     word columns() const { return m_columns; }

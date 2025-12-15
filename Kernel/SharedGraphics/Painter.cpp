@@ -3,11 +3,10 @@
 #include "GraphicsBitmap.h"
 // #include <AK/Assertions.h>
 #include <AK/StdLibExtras.h>
-#include "kprintf.h"
 
 Painter::Painter(GraphicsBitmap& bitmap)
 {
-    // m_font = &Font::default_font();
+    m_font = &Font::default_font();
     m_target = &bitmap;
     m_clip_rect = { { 0, 0 }, bitmap.size() };
 }
@@ -121,8 +120,6 @@ void Painter::draw_bitmap(const Point& p, const CharacterBitmap& bitmap, Color c
     Rect rect { p, bitmap.size() };
     rect.move_by(m_translation);
     auto clipped_rect = Rect::intersection(rect, m_clip_rect);
-    dbgprintf("rect: x=%d, y=%d, w=%d, h=%d\n", rect.x(), rect.y(), rect.width(), rect.height());
-    dbgprintf("clip: x=%d, y=%d, w=%d, h=%d\n", m_clip_rect.x(), m_clip_rect.y(), m_clip_rect.width(), m_clip_rect.width());
     if (clipped_rect.is_empty())
         return;
 
