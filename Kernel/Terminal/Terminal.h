@@ -49,7 +49,7 @@ private:
     word columns() const { return m_columns; }
     word rows() const { return m_rows; }
     Rect glyph_rect(word row, word column);
-//     Rect row_rect(word row);
+    Rect row_rect(word row);
 
     struct Attribute {
         Attribute() { reset(); }

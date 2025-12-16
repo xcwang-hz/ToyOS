@@ -36,8 +36,8 @@ extern "C" {
 
 void* memset(void* dest_ptr, byte c, dword n)
 {
-    dword dest = (dword)dest_ptr;
 #if defined(I386)    
+    dword dest = (dword)dest_ptr;
     // FIXME: Support starting at an unaligned address.
     if (!(dest & 0x3) && n >= 12) {
         size_t dwords = n / sizeof(dword);
@@ -61,9 +61,24 @@ void* memset(void* dest_ptr, byte c, dword n)
         : "memory"
     );
 #elif defined(WASM)
-    (void)dest_ptr;
-    (void)c;
-    (void)n;
+    byte* p = (byte*)dest_ptr;
+    if (n >= 4) {
+        dword expanded_c = (dword)c & 0xFF;
+        expanded_c |= expanded_c << 8;
+        expanded_c |= expanded_c << 16;
+        expanded_c |= expanded_c << 24;
+
+        size_t dwords = n / 4;
+        dword* pd = (dword*)p;
+        while (dwords--)
+            *pd++ = expanded_c;
+        
+        p = (byte*)pd;
+        n %= 4; // Remaining bytes (0-3)
+    }
+
+    while (n--)
+        *p++ = c;
 #else
     #error "Unknown architecture"
 #endif            

@@ -13,9 +13,7 @@ ALWAYS_INLINE void fast_dword_copy(dword* dest, const dword* src, size_t count)
         : "memory"
     );
 #elif defined(WASM)
-    (void)dest;
-    (void)src;
-    (void)count;
+    __builtin_memcpy(dest, src, count * sizeof(dword));
 #else
     #error "Unknown architecture"
 #endif    
@@ -31,9 +29,12 @@ ALWAYS_INLINE void fast_dword_fill(dword* dest, dword value, size_t count)
         : "memory"
     );
 #elif defined(WASM)
-    (void)dest;
-    (void)value;
-    (void)count;
+    if (value == ((value & 0xFF) * 0x01010101))
+        __builtin_memset(dest, value, count * sizeof(dword));
+    else {
+        for (size_t i = 0; i < count; ++i)
+            dest[i] = value;
+    }
 #else
     #error "Unknown architecture"
 #endif        

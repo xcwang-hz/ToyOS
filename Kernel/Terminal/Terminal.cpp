@@ -554,11 +554,11 @@ Rect Terminal::glyph_rect(word row, word column)
     return { x + m_inset, y + m_inset, font().glyph_width(), font().glyph_height() };
 }
 
-// Rect Terminal::row_rect(word row)
-// {
-//     int y = row * m_line_height;
-//     return { m_inset, y + m_inset, font().glyph_width() * m_columns, font().glyph_height() };
-// }
+Rect Terminal::row_rect(word row)
+{
+    int y = row * m_line_height;
+    return { m_inset, y + m_inset, font().glyph_width() * m_columns, font().glyph_height() };
+}
 
 // inline Terminal::Attribute& Terminal::attribute_at(word row, word column)
 // {
@@ -567,24 +567,23 @@ Rect Terminal::glyph_rect(word row, word column)
 //     return line(row).attributes[column];
 // }
 
-// bool Terminal::Line::has_only_one_background_color() const
-// {
-//     if (!length)
-//         return true;
-//     // FIXME: Cache this result?
-//     auto color = attributes[0].background_color;
-//     for (size_t i = 1; i < length; ++i) {
-//         if (attributes[i].background_color != color)
-//             return false;
-//     }
-//     return true;
-// }
+bool Terminal::Line::has_only_one_background_color() const
+{
+    if (!length)
+        return true;
+    // FIXME: Cache this result?
+    auto color = attributes[0].background_color;
+    for (size_t i = 1; i < length; ++i) {
+        if (attributes[i].background_color != color)
+            return false;
+    }
+    return true;
+}
 
 void Terminal::paint()
 {
     Rect rect { 0, 0, m_pixel_width, m_pixel_height };
     Painter painter(*m_backing);
-    painter.fill_rect(rect, Color::MidGray);
 
     for (size_t i = 0; i < rows(); ++i)
         line(i).did_paint = false;
@@ -609,19 +608,19 @@ void Terminal::paint()
         if (!line.dirty)
             continue;
         line.dirty = false;
-    //     bool has_only_one_background_color = line.has_only_one_background_color();
-    //     if (has_only_one_background_color)
-    //         painter.fill_rect(row_rect(row), line.attributes[0].background_color);
+        bool has_only_one_background_color = line.has_only_one_background_color();
+        if (has_only_one_background_color)
+            painter.fill_rect(row_rect(row), line.attributes[0].background_color);
         
         for (word column = 0; column < m_columns; ++column) {
             auto& attribute = line.attributes[column];
             line.did_paint = true;
             char ch = line.characters[column];
             auto character_rect = glyph_rect(row, column);
-    //         if (!has_only_one_background_color) {
-    //             auto character_background = ansi_color(attribute.background_color);
-    //             painter.fill_rect(character_rect, character_background);
-    //         }
+            if (!has_only_one_background_color) {
+                auto character_background = ansi_color(attribute.background_color);
+                painter.fill_rect(character_rect, character_background);
+            }
             if (ch == ' ')
                 continue;
             painter.draw_glyph(character_rect.location(), ch, ansi_color(attribute.foreground_color));
