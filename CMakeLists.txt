@@ -24,6 +24,8 @@ set(COMMON_INCLUDES
 )
 
 set(KERNEL_COMMON_SOURCES
+    Kernel/IRQHandler.cpp
+    Kernel/Keyboard.cpp
     Kernel/StdLib.cpp
     Kernel/entry.cpp
     Kernel/kmalloc.cpp
@@ -45,8 +47,15 @@ set(DIST_WASM ${CMAKE_BINARY_DIR}/wasm)
 file(MAKE_DIRECTORY ${DIST_I386})
 file(MAKE_DIRECTORY ${DIST_WASM})
 
+set(I386_INCLUDES
+    ${CMAKE_CURRENT_SOURCE_DIR}/arch/i386
+    ${COMMON_INCLUDES}
+)
+
 set(I386_SOURCES
+    arch/i386/PIC.cpp
     arch/i386/boot.S
+    arch/i386/i386.cpp
     ${KERNEL_COMMON_SOURCES}
 )
 
@@ -64,7 +73,7 @@ set_target_properties(toyos_i386 PROPERTIES
 )
 
 # 4. Compile Options (Matches CXXFLAGS_I386)
-target_include_directories(toyos_i386 PRIVATE ${COMMON_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/arch/i386)
+target_include_directories(toyos_i386 PRIVATE ${I386_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/arch/i386)
 
 target_compile_options(toyos_i386 PRIVATE
     --target=i386-pc-none-elf -march=i386

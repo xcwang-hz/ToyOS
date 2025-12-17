@@ -42,3 +42,10 @@ void operator delete[](void* ptr, unsigned int)
 {
     // return kfree(ptr);
 }
+
+void* kmalloc_eternal(size_t size)
+{
+    void* ptr = &s_heap[s_heap_ptr];
+    s_heap_ptr += size;
+    return ptr;
+}

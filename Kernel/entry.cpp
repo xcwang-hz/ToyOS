@@ -38,12 +38,18 @@ struct multiboot_info_t {
     uint8_t  framebuffer_type;
 };
 
-#ifdef WASM
-    const int SCREEN_WIDTH = 800;
-    const int SCREEN_HEIGHT = 600;
-    // Static buffer for Wasm
-    uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-    extern "C" void canvas_refresh(uint32_t* ptr, int width, int height);
+#ifdef I386
+#include "i386.h"
+#include "PIC.h"
+#include "Keyboard.h"
+
+Keyboard* keyboard;
+#else
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
+// Static buffer for Wasm
+uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+extern "C" void canvas_refresh(uint32_t* ptr, int width, int height);
 #endif
 
 extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
@@ -55,6 +61,13 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
 
     int w = mbd->framebuffer_width;
     int h = mbd->framebuffer_height;        
+
+    cli();
+    // RTC::initialize();
+    PIC::initialize();
+    //gdt_init();
+    idt_init();
+    keyboard = new Keyboard;
 #else
     (void)magic;
     (void)mbd;
@@ -77,7 +90,12 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
     Terminal::the().on_char('O');
     Terminal::the().on_char('S');
     Terminal::the().paint();
-#ifdef WASM
+
+#ifdef I386
+    sti();
+    for (;;)
+        asm("hlt");
+#else
     canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
 #endif    
 }

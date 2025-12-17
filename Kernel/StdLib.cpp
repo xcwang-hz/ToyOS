@@ -132,10 +132,10 @@ void* memset(void* dest_ptr, byte c, dword n)
 //     return 0;
 // }
 
-// void __cxa_pure_virtual() NORETURN;
-// void __cxa_pure_virtual()
-// {
-//     ASSERT_NOT_REACHED();
-// }
+void __cxa_pure_virtual() NORETURN;
+void __cxa_pure_virtual()
+{
+    // ASSERT_NOT_REACHED();
+}
 
 }
