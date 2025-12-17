@@ -18,6 +18,8 @@
     
     canvas {
       display: block;
+      border: 2px solid #ffffff; /* Border for visibility */
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
     }
 
     .status {
@@ -27,6 +29,17 @@
     }
   </style>  
   <script>
+    let kernelInstance = null;
+    const PS2_SCANCODES = {
+      "Escape": 0x01, "Digit1": 0x02, "Digit2": 0x03, "Digit3": 0x04, "Digit4": 0x05, "Digit5": 0x06, "Digit6": 0x07, "Digit7": 0x08, 
+      "Digit8": 0x09, "Digit9": 0x0A, "Digit0": 0x0B, "Minus": 0x0C, "Equal": 0x0D, "Backspace": 0x0E, "Tab": 0x0F, "KeyQ": 0x10, 
+      "KeyW": 0x11, "KeyE": 0x12, "KeyR": 0x13, "KeyT": 0x14, "KeyY": 0x15, "KeyU": 0x16, "KeyI": 0x17, "KeyO": 0x18, 
+      "KeyP": 0x19, "BracketLeft": 0x1A, "BracketRight": 0x1B, "Enter": 0x1C, "ControlLeft": 0x1D, "KeyA": 0x1E, "KeyS": 0x1F, "KeyD": 0x20, 
+      "KeyF": 0x21, "KeyG": 0x22, "KeyH": 0x23, "KeyJ": 0x24, "KeyK": 0x25, "KeyL": 0x26, "Semicolon": 0x27, "Quote": 0x28, 
+      "Backquote": 0x29, "ShiftLeft": 0x2A, "Backslash": 0x2B, "KeyZ": 0x2C, "KeyX": 0x2D, "KeyC": 0x2E, "KeyV": 0x2F, "KeyB": 0x30,
+      "KeyN": 0x31, "KeyM": 0x32, "Comma": 0x33, "Period": 0x34, "Slash": 0x35, "ShiftRight": 0x36, "NumpadMultiply": 0x37, "AltLeft": 0x38,
+      "Space": 0x39
+    };
     document.addEventListener("DOMContentLoaded", async () => {
       const log = (text) => console.log(text);
 
@@ -42,6 +55,36 @@
       // initial: 256 pages = 16MB
       // maximum: 256 pages = 16MB
       const wasmMemory = new WebAssembly.Memory({ initial: 256, maximum: 256 });
+
+      const handleKeyEvent = (e, isDown) => {
+        // console.log(`Key: ${e.code}, isDown: ${isDown}`);
+        if (!kernelInstance) return;
+
+        // Lookup the scancode map
+        const scancode = PS2_SCANCODES[e.code];
+        if (scancode) {
+          if (e.ctrlKey || e.altKey)
+             e.preventDefault(); 
+
+          let codeToSend = scancode;
+          if (!isDown)
+            codeToSend |= 0x80;
+
+          // Call the exported C++ function
+          if (kernelInstance.exports.wasm_send_key)
+            kernelInstance.exports.wasm_send_key(codeToSend);
+        } else {
+          console.warn(`ToyOS_JS: Unmapped key: ${e.code}`);
+        }
+      };      
+
+      window.addEventListener('keydown', (e) => {
+        handleKeyEvent(e, true);
+      });
+
+      window.addEventListener('keyup', (e) => {
+        handleKeyEvent(e, false);
+      });      
 
       try {
         const importObject = {
@@ -81,8 +124,8 @@
 
         WebAssembly.instantiateStreaming(fetch("toyos.wasm"), importObject)
           .then(obj => {
-              const kernel = obj.instance;
-              kernel.exports.kernel_entry(0, 0); 
+              kernelInstance = obj.instance;
+              kernelInstance.exports.kernel_entry(0, 0); 
           });        
       } catch (error) {
         log("kernel failed with (" + error.name + "): " + error.message + "\n" + error.stack);
