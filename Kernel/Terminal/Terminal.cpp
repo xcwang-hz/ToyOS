@@ -13,15 +13,6 @@
 
 // #define TERMINAL_DEBUG
 
-static Terminal* t_the;
-Terminal& Terminal::the()
-{
-    // ASSERT(t_the);
-    if (!t_the)
-        t_the = new Terminal();
-    return *t_the;
-}
-
 void Terminal::create_window(const Size& size, RGBA32* data)
 {
     m_pixel_width = m_columns * font().glyph_width() + m_inset * 2;
@@ -48,16 +39,20 @@ void Terminal::create_window(const Size& size, RGBA32* data)
 
     m_backing = GraphicsBitmap::create_wrapper(size, data);
 //     dbgprintf("(Terminal:%d) window backing %ux%u @ %p\n", getpid(), info.size.width, info.size.height, info.pixels);
-
+    on_char('t');
+    on_char('o');
+    on_char('y');
+    on_char('o');
+    on_char('s');
+    on_char(':');
 }
 
-Terminal::Terminal()
-    : m_font(Font::default_font())
+Terminal::Terminal(Point translation)
+    : m_font(Font::default_font()), m_translation(translation)
 {
-    t_the = this;
     m_line_height = font().glyph_height() + m_line_spacing;
 
-    set_size(80, 25);
+    set_size(50, 20);
     // m_horizontal_tabs = static_cast<byte*>(malloc(columns()));
     // for (unsigned i = 0; i < columns(); ++i)
     //     m_horizontal_tabs[i] = (i % 8) == 0;
@@ -74,6 +69,7 @@ Terminal::Terminal()
 Terminal::Line::Line(word columns)
     : length(columns)
 {
+    dirty = true;
     characters = new byte[length];
     attributes = new Attribute[length];
     did_paint = false;
@@ -588,7 +584,7 @@ bool Terminal::Line::has_only_one_background_color() const
 void Terminal::paint()
 {
     Rect rect { 0, 0, m_pixel_width, m_pixel_height };
-    Painter painter(*m_backing);
+    Painter painter(*m_backing, m_translation);
 
     for (size_t i = 0; i < rows(); ++i)
         line(i).did_paint = false;
@@ -615,7 +611,7 @@ void Terminal::paint()
         line.dirty = false;
         bool has_only_one_background_color = line.has_only_one_background_color();
         if (has_only_one_background_color)
-            painter.fill_rect(row_rect(row), line.attributes[0].background_color);
+            painter.fill_rect(row_rect(row), ansi_color(line.attributes[0].background_color));
         
         for (word column = 0; column < m_columns; ++column) {
             auto& attribute = line.attributes[column];

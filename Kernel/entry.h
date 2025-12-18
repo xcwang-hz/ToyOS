@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Terminal.h"
 #ifdef WASM
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -7,3 +8,6 @@ const int SCREEN_HEIGHT = 600;
 extern uint32_t wasm_framebuffer[];
 extern "C" void canvas_refresh(uint32_t* ptr, int width, int height);
 #endif
+
+extern Terminal* terminal1;
+extern Terminal* terminal2;

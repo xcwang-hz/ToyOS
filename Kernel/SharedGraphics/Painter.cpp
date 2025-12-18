@@ -4,11 +4,18 @@
 // #include <AK/Assertions.h>
 #include <AK/StdLibExtras.h>
 
-Painter::Painter(GraphicsBitmap& bitmap)
+Painter::Painter(GraphicsBitmap& bitmap, Point translation)
+    : m_translation(translation)
 {
     m_font = &Font::default_font();
     m_target = &bitmap;
     m_clip_rect = { { 0, 0 }, bitmap.size() };
+}
+
+Painter::Painter(GraphicsBitmap& bitmap)
+    : Painter(bitmap, {0, 0})
+{
+    
 }
 
 Painter::~Painter()

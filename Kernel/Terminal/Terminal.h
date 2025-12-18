@@ -11,9 +11,7 @@ class Font;
 
 class Terminal final : public KeyboardClient {
 public:
-    // for now there is only one instance
-    static Terminal& the() PURE;
-    Terminal();
+    Terminal(Point translation);
     ~Terminal();
 
     void create_window(const Size& size, RGBA32* data);
@@ -59,8 +57,8 @@ private:
         Attribute() { reset(); }
         void reset()
         {
-            foreground_color = 7;
-            background_color = 0;
+            foreground_color = 1;
+            background_color = 4;
             //bold = false;
         }
         unsigned foreground_color : 4;
@@ -125,6 +123,7 @@ private:
     int m_pixel_height { 0 };
 //     int m_rows_to_scroll_backing_store { 0 };
 
+    Point m_translation;
     int m_inset { 2 };
     int m_line_spacing { 4 };
     int m_line_height { 0 };

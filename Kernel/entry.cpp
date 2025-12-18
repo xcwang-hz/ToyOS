@@ -38,6 +38,10 @@ struct multiboot_info_t {
     uint8_t  framebuffer_type;
 };
 
+
+Terminal* terminal1 = nullptr;
+Terminal* terminal2 = nullptr;
+
 #ifdef I386
 #include "i386.h"
 #include "PIC.h"
@@ -80,13 +84,13 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
 #endif        
 
     dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
-    Terminal::the().create_window(size, fb_ptr);
-    Terminal::the().on_char('T');
-    Terminal::the().on_char('o');
-    Terminal::the().on_char('y');
-    Terminal::the().on_char('O');
-    Terminal::the().on_char('S');
-    Terminal::the().paint();
+
+    terminal1 = new Terminal({0,0});
+    terminal2 = new Terminal({w/2,h/2});
+    terminal1->create_window(size, fb_ptr);
+    terminal2->create_window(size, fb_ptr);
+    terminal1->paint();
+    terminal2->paint();
 
 #ifdef I386
     sti();

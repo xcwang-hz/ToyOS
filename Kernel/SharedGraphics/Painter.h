@@ -13,6 +13,7 @@ class Font;
 class Painter {
 public:
     explicit Painter(GraphicsBitmap&);
+    explicit Painter(GraphicsBitmap& bitmap, Point translation);
     ~Painter();
     void fill_rect(const Rect&, Color);
     // void fill_rect_with_gradient(const Rect&, Color gradient_start, Color gradient_end);
