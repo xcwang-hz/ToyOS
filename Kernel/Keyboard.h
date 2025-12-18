@@ -36,7 +36,7 @@ public:
     Keyboard();
 
     void handle_scancode(byte scancode);
-    // void set_client(KeyboardClient* client) { m_client = client; }
+    void set_client(KeyboardClient* client) { m_client = client; }
 
     // // ^CharacterDevice
     // virtual ssize_t read(Process&, byte* buffer, size_t) override;

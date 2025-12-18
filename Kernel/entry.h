@@ -1,0 +1,9 @@
+#pragma once
+
+#ifdef WASM
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
+// Static buffer for Wasm
+extern uint32_t wasm_framebuffer[];
+extern "C" void canvas_refresh(uint32_t* ptr, int width, int height);
+#endif

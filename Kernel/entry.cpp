@@ -45,11 +45,8 @@ struct multiboot_info_t {
 
 Keyboard* keyboard;
 #else
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
-// Static buffer for Wasm
+#include "entry.h"
 uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-extern "C" void canvas_refresh(uint32_t* ptr, int width, int height);
 #endif
 
 extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
@@ -97,5 +94,5 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         asm("hlt");
 #else
     canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
-#endif    
+#endif
 }

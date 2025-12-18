@@ -3,12 +3,13 @@
 // #include <AK/AKString.h>
 // #include <AK/Types.h>
 // #include <AK/Vector.h>
+#include <Kernel/Keyboard.h>
 #include <SharedGraphics/GraphicsBitmap.h>
 #include <SharedGraphics/Rect.h>
 
 class Font;
 
-class Terminal {
+class Terminal final : public KeyboardClient {
 public:
     // for now there is only one instance
     static Terminal& the() PURE;
@@ -20,9 +21,12 @@ public:
     void on_char(byte);
 
 //     void set_in_active_window(bool);
-//     void update();
+    void update();
 
 private:
+    // ^KeyboardClient
+    virtual void on_key_pressed(Keyboard::Event) override;
+    
     Font& font() { return *m_font; }
 //     void scroll_up();
     void set_cursor(unsigned row, unsigned column);

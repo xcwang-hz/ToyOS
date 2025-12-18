@@ -2,13 +2,16 @@
 // #include <AK/AKString.h>
 #include <SharedGraphics/Font.h>
 #include <SharedGraphics/Painter.h>
+#include <Kernel/Keyboard.h>
+#include "kprintf.h"
+#include "entry.h"
 // #include <AK/StdLibExtras.h>
 // #include <LibC/stdlib.h>
 // #include <LibC/unistd.h>
 // #include <LibC/stdio.h>
 // #include <LibC/gui.h>
 
-//#define TERMINAL_DEBUG
+// #define TERMINAL_DEBUG
 
 static Terminal* t_the;
 Terminal& Terminal::the()
@@ -64,6 +67,8 @@ Terminal::Terminal()
     m_lines = new Line*[rows()];
     for (size_t i = 0; i < rows(); ++i)
         m_lines[i] = new Line(columns());
+
+    Keyboard::the().set_client(this);        
 }
 
 Terminal::Line::Line(word columns)
@@ -89,13 +94,13 @@ void Terminal::Line::clear()
         attributes[i].reset();
 }
 
-// Terminal::~Terminal()
-// {
-//     // for (size_t i = 0; i < m_rows; ++i)
-//     //     delete m_lines[i];
-//     // delete [] m_lines;
-//     // free(m_horizontal_tabs);
-// }
+Terminal::~Terminal()
+{
+    // for (size_t i = 0; i < m_rows; ++i)
+    //     delete m_lines[i];
+    // delete [] m_lines;
+    // free(m_horizontal_tabs);
+}
 
 void Terminal::clear()
 {
@@ -431,9 +436,9 @@ void Terminal::put_character_at(unsigned row, unsigned column, byte ch)
 
 void Terminal::on_char(byte ch)
 {
-// #ifdef TERMINAL_DEBUG
-//     dbgprintf("Terminal::on_char: %b (%c)\n", ch, ch);
-// #endif
+#ifdef TERMINAL_DEBUG
+    dbgprintf("Terminal::on_char: %b (%c)\n", ch, ch);
+#endif
     switch (m_escape_state) {
 //     case ExpectBracket:
 //         if (ch == '[')
@@ -664,20 +669,20 @@ void Terminal::paint()
 //     }
 // }
 
-// void Terminal::update()
-// {
-//     Rect rect;
-//     for (int i = 0; i < m_rows; ++i) {
-//         if (line(i).did_paint)
-//             rect = rect.united(row_rect(i));
-//     }
-//     GUI_Rect gui_rect = rect;
-//     int rc = gui_invalidate_window(m_window_id, rect.is_null() ? nullptr : &gui_rect);
-//     if (rc < 0) {
-//         perror("gui_invalidate_window");
-//         exit(1);
-//     }
-// }
+void Terminal::update()
+{
+    Rect rect;
+    for (int i = 0; i < m_rows; ++i) {
+        if (line(i).did_paint)
+            rect = rect.united(row_rect(i));
+    }
+    // GUI_Rect gui_rect = rect;
+    // int rc = gui_invalidate_window(m_window_id, rect.is_null() ? nullptr : &gui_rect);
+    // if (rc < 0) {
+    //     perror("gui_invalidate_window");
+    //     exit(1);
+    // }
+}
 
 // void Terminal::set_window_title(const String& title)
 // {
@@ -700,4 +705,26 @@ void Terminal::paint()
 void Terminal::invalidate_cursor()
 {
     line(m_cursor_row).dirty = true;
+}
+
+void Terminal::on_key_pressed(Keyboard::Event key)
+{
+    if (key.ctrl()) {
+        if (key.character >= 'a' && key.character <= 'z') {
+            on_char(key.character - 'a' + 1);
+            return;
+        } else if (key.character == '\\') {
+            on_char(0x1c);
+            return;
+        }
+    }
+
+    if (!key.is_press())
+        return;
+
+    on_char(key.character);
+    paint();
+#ifdef WASM
+    canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+#endif
 }

@@ -9,7 +9,7 @@
 // #include "VirtualConsole.h"
 // #include <AK/Assertions.h>
 
-#define KEYBOARD_DEBUG
+// #define KEYBOARD_DEBUG
 
 #define IRQ_KEYBOARD             1
 #define I8042_BUFFER             0x60
@@ -79,7 +79,6 @@ void Keyboard::key_state_changed(byte raw, bool pressed)
     event.key = (m_modifiers & Mod_Shift) ? shifted_key_map[raw] : unshifted_key_map[raw];
     event.character = (m_modifiers & Mod_Shift) ? shift_map[raw] : map[raw];
     event.flags = m_modifiers;
-    dbgprintf("Keyboard::key_state_changed: %c %s\n", event.character, pressed ? "down" : "up");
     if (pressed)
         event.flags |= Is_Press;
     if (m_client)

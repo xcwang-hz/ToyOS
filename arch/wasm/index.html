@@ -95,8 +95,8 @@
             canvas_refresh: (ptr, width, height) => {
               // Auto-detection: If this function is called, we are in Graphics Mode.
               // Make the canvas container visible if it isn't already.
-              console.log('Graphics signal received. Displaying monitor');
-              console.log("JS received ptr:", ptr, "(Hex: 0x" + ptr.toString(16) + ")");
+              // console.log('Graphics signal received. Displaying monitor');
+              // console.log("JS received ptr:", ptr, "(Hex: 0x" + ptr.toString(16) + ")");
 
               // Calculate buffer size: Width * Height * 4 bytes (RGBA)
               const bufferSize = width * height * 4;
