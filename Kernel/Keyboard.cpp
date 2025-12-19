@@ -6,6 +6,7 @@
 #endif
 #include "kprintf.h"
 #include "Keyboard.h"
+#include <Kernel/entry.h>
 // #include "VirtualConsole.h"
 // #include <AK/Assertions.h>
 
@@ -107,11 +108,14 @@ void Keyboard::handle_scancode(byte scancode)
         if (m_modifiers & Mod_Alt) {
             switch (map[ch]) {
             case '1':
+                dbgprintf("Keyboard::handle_scancode: switch to terminal1\n");
+                set_client(terminal1);
+                return;
             case '2':
-            case '3':
-            case '4':
+                dbgprintf("Keyboard::handle_scancode: switch to terminal2\n");
+                set_client(terminal2);
                 // VirtualConsole::switch_to(map[ch] - '0' - 1);
-                break;
+                return;
             default:
                 break;
             }
