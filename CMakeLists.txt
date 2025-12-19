@@ -26,6 +26,8 @@ set(COMMON_INCLUDES
 set(KERNEL_COMMON_SOURCES
     Kernel/IRQHandler.cpp
     Kernel/Keyboard.cpp
+    Kernel/Process.cpp
+    Kernel/Scheduler.cpp
     Kernel/StdLib.cpp
     Kernel/entry.cpp
     Kernel/kmalloc.cpp

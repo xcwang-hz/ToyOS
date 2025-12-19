@@ -1,7 +1,17 @@
 #include "Size.h"
 #include <AK/Types.h>
 #include <Terminal.h>
+#include <Scheduler.h>
+#include <Process.h>
 #include "kprintf.h"
+#ifdef I386
+#include "i386.h"
+#include "PIC.h"
+#include "Keyboard.h"
+#else
+#include "entry.h"
+uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+#endif
 
 /* * Multiboot Info Structure (Partial definition)
  * We need the framebuffer fields which start at offset 88 (0x58).
@@ -42,17 +52,29 @@ struct multiboot_info_t {
 Terminal* terminal1 = nullptr;
 Terminal* terminal2 = nullptr;
 
-#ifdef I386
-#include "i386.h"
-#include "PIC.h"
-#include "Keyboard.h"
+void task_a_entry() {
+    while (true) {
+        terminal1->on_char('A');
+
+        terminal1->paint(); 
+
+        Scheduler::yield(); 
+        
+        for (int i = 0; i < 1000000; i++); 
+    }
+}
+
+void task_b_entry() {
+    while (true) {
+        terminal2->on_char('B');
+        terminal2->paint();
+        
+        Scheduler::yield();
+        for (int i = 0; i < 2000000; i++);
+    }
+}
 
 Keyboard* keyboard;
-#else
-#include "entry.h"
-uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-#endif
-
 extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
 #ifdef I386
     if (magic != 0x2BADB002)
@@ -85,10 +107,16 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
 
     dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
 
+    Scheduler::initialize();
+
     terminal1 = new Terminal({0,0});
     terminal2 = new Terminal({w/2,h/2});
     terminal1->create_window(size, fb_ptr);
     terminal2->create_window(size, fb_ptr);
+
+    Process::create_kernel_process("Terminal1", nullptr);
+    Process::create_kernel_process("Terminal2", nullptr);
+
     terminal1->paint();
     terminal2->paint();
 
