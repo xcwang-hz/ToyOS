@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug ToyOS",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/i386/toyos.bin",
+            "miDebuggerServerAddress": "localhost:1234",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "stopAtEntry": true,
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                     "description": "Set architecture to i386",
+                     "text": "set architecture i386",
+                     "ignoreFailures": false
+                },
+                {
+                    "description": "Break at kernel entry",
+                    "text": "hbreak kernel_entry",
+                    "ignoreFailures": false
+                }                
+            ]
+        }
+    ]
+}

@@ -198,6 +198,14 @@ add_custom_target(runq
     COMMENT "Starting QEMU..."
 )
 
+# Target: make debugq (Run QEMU)
+add_custom_target(debugq 
+    COMMAND qemu-system-i386 -cdrom ${ISO_IMAGE} -vga std -debugcon file:debug.log -s -S
+    DEPENDS toyos_iso
+    USES_TERMINAL
+    COMMENT "Starting QEMU in Debug Mode (Waiting for GDB)..."
+)
+
 # Target: make runs (Run Python Server)
 add_custom_target(runs
     COMMAND python3 server.py
