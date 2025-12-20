@@ -156,27 +156,27 @@ void flush_gdt();
 //     LinearAddress m_laddr;
 // };
 
-// struct RegisterDump {
-//     word ss;
-//     word gs;
-//     word fs;
-//     word es;
-//     word ds;
-//     dword edi;
-//     dword esi;
-//     dword ebp;
-//     dword esp;
-//     dword ebx;
-//     dword edx;
-//     dword ecx;
-//     dword eax;
-//     dword eip;
-//     word cs;
-//     word __csPadding;
-//     dword eflags;
-//     dword esp_if_crossRing;
-//     word ss_if_crossRing;
-// } PACKED;
+struct RegisterDump {
+    word ss;
+    word gs;
+    word fs;
+    word es;
+    word ds;
+    dword edi;
+    dword esi;
+    dword ebp;
+    dword esp;
+    dword ebx;
+    dword edx;
+    dword ecx;
+    dword eax;
+    dword eip;
+    word cs;
+    word __csPadding;
+    dword eflags;
+    dword esp_if_crossRing;
+    word ss_if_crossRing;
+} PACKED;
 
 // struct RegisterDumpWithExceptionCode {
 //     word ss;

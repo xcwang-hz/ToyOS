@@ -65,7 +65,7 @@ public:
         // Skip0SchedulerPasses,
         Dead,
         // BeingInspected,
-        // BlockedSleep,
+        BlockedSleep,
         // BlockedWait,
         // BlockedRead,
         // BlockedWrite,
@@ -94,10 +94,10 @@ public:
     // static Process* from_pid(pid_t);
 
     const char* name() const { return m_name; }
-    // pid_t pid() const { return m_pid; }
+    pid_t pid() const { return m_pid; }
     // pid_t sid() const { return m_sid; }
     // pid_t pgid() const { return m_pgid; }
-    // dword ticks() const { return m_ticks; }
+    dword ticks() const { return m_ticks; }
     // word selector() const { return m_farPtr.selector; }
     // TSS32& tss() { return m_tss; }
     State state() const { return m_state; }
@@ -113,19 +113,21 @@ public:
     // const FileDescriptor* file_descriptor(int fd) const;
 
     // void block(Process::State);
-    // void unblock();
+    void unblock();
 
-    // void setWakeupTime(dword t) { m_wakeupTime = t; }
-    // dword wakeupTime() const { return m_wakeupTime; }
+    void setWakeupTime(dword t) { m_wakeupTime = t; }
+    dword wakeupTime() const { return m_wakeupTime; }
 
-    // template<typename Callback> static void for_each(Callback);
+    uint32_t m_kernel_stack_top { 0 };
+
+    template<typename Callback> static void for_each(Callback);
     // template<typename Callback> static void for_each_in_pgrp(pid_t, Callback);
     // template<typename Callback> static void for_each_in_state(State, Callback);
     // template<typename Callback> static void for_each_not_in_state(State, Callback);
     // template<typename Callback> void for_each_child(Callback);
 
-    // bool tick() { ++m_ticks; return --m_ticksLeft; }
-    // void set_ticks_left(dword t) { m_ticksLeft = t; }
+    bool tick() { ++m_ticks; return --m_ticksLeft; }
+    void set_ticks_left(dword t) { m_ticksLeft = t; }
 
     // void setSelector(word s) { m_farPtr.selector = s; }
     void set_state(State s) { m_state = s; }
@@ -213,7 +215,7 @@ public:
 
     // DisplayInfo get_display_info();
 
-    // static void initialize();
+    static void initialize();
     // static void initialize_gui_statics();
     // int make_window_id();
 
@@ -288,6 +290,8 @@ private:
     Process(const char* name, void (*entry)());
     // Process(String&& name, uid_t, gid_t, pid_t ppid, RingLevel, RetainPtr<Inode>&& cwd = nullptr, RetainPtr<Inode>&& executable = nullptr, TTY* = nullptr, Process* fork_parent = nullptr);
 
+    void setup_kernel_stack(void (*entry)());
+
     // int do_exec(const String& path, Vector<String>&& arguments, Vector<String>&& environment);
     // void push_value_on_stack(dword);
 
@@ -297,21 +301,21 @@ private:
 
 
     char m_name[32];
-    // void (*m_entry)() { nullptr };
-    // pid_t m_pid { 0 };
+    void (*m_entry)() { nullptr };
+    pid_t m_pid { 0 };
     // uid_t m_uid { 0 };
     // gid_t m_gid { 0 };
     // uid_t m_euid { 0 };
     // gid_t m_egid { 0 };
     // pid_t m_sid { 0 };
     // pid_t m_pgid { 0 };
-    // dword m_ticks { 0 };
-    // dword m_ticksLeft { 0 };
+    dword m_ticks { 0 };
+    dword m_ticksLeft { 0 };
     // dword m_stackTop0 { 0 };
     // dword m_stackTop3 { 0 };
     // FarPtr m_farPtr;
     State m_state { Invalid };
-    // dword m_wakeupTime { 0 };
+    dword m_wakeupTime { 0 };
     // TSS32 m_tss;
     // TSS32 m_tss_to_resume_kernel;
     // FPUState m_fpu_state;
@@ -370,6 +374,7 @@ private:
     // Vector<String> m_initial_environment;
     // HashTable<gid_t> m_gids;
 
+    void* m_kernel_stack_base { nullptr };
     // Region* m_stack_region { nullptr };
     // Region* m_signal_stack_user_region { nullptr };
     // Region* m_signal_stack_kernel_region { nullptr };
@@ -435,19 +440,19 @@ extern Process* current;
 // extern void block(Process::State);
 // extern void sleep(dword ticks);
 
-// extern InlineLinkedList<Process>* g_processes;
+extern InlineLinkedList<Process>* g_processes;
 
-// template<typename Callback>
-// inline void Process::for_each(Callback callback)
-// {
+template<typename Callback>
+inline void Process::for_each(Callback callback)
+{
 //     ASSERT_INTERRUPTS_DISABLED();
-//     for (auto* process = g_processes->head(); process;) {
-//         auto* next_process = process->next();
-//         if (!callback(*process))
-//             break;
-//         process = next_process;
-//     }
-// }
+    for (auto* process = g_processes->head(); process;) {
+        auto* next_process = process->next();
+        if (!callback(*process))
+            break;
+        process = next_process;
+    }
+}
 
 // template<typename Callback>
 // inline void Process::for_each_child(Callback callback)

@@ -3,7 +3,7 @@
 #include "kmalloc.h"
 #include "StdLib.h"
 // #include "i386.h"
-// #include "system.h"
+#include "system.h"
 // #include <Kernel/FileDescriptor.h>
 // #include <Kernel/VirtualFileSystem.h>
 // #include "ELFLoader.h"
@@ -15,7 +15,7 @@
 // #include <LibC/signal_numbers.h>
 // #include <LibC/errno_numbers.h>
 // #include "Syscall.h"
-// #include "Scheduler.h"
+#include "Scheduler.h"
 // #include "FIFO.h"
 // #include "KSyms.h"
 // #include <WindowServer/WSWindow.h>
@@ -27,10 +27,10 @@
 // #define SIGNAL_DEBUG
 // #define MAX_PROCESS_GIDS 32
 
-// static const dword defaultStackSize = 16384;
+static const dword defaultStackSize = 16384;
 
-// static pid_t next_pid;
-// InlineLinkedList<Process>* g_processes;
+static pid_t next_pid;
+InlineLinkedList<Process>* g_processes;
 // static String* s_hostname;
 
 // static String& hostnameStorage(InterruptDisabler&)
@@ -47,17 +47,17 @@
 
 // CoolGlobals* g_cool_globals;
 
-// void Process::initialize()
-// {
-// #ifdef COOL_GLOBALS
-//     g_cool_globals = reinterpret_cast<CoolGlobals*>(0x1000);
-// #endif
-//     next_pid = 0;
-//     g_processes = new InlineLinkedList<Process>;
-//     s_hostname = new String("courage");
-//     Scheduler::initialize();
-//     initialize_gui_statics();
-// }
+void Process::initialize()
+{
+#ifdef COOL_GLOBALS
+    g_cool_globals = reinterpret_cast<CoolGlobals*>(0x1000);
+#endif
+    next_pid = 0;
+    g_processes = new InlineLinkedList<Process>;
+    // s_hostname = new String("courage");
+    Scheduler::initialize();
+    // initialize_gui_statics();
+}
 
 // Vector<Process*> Process::allProcesses()
 // {
@@ -560,20 +560,20 @@
 Process* Process::create_kernel_process(const char* name, void (*entry)())
 {
     auto* process = new Process(name, entry);
-// //     auto* process = new Process(move(name), (uid_t)0, (gid_t)0, (pid_t)0, Ring0);
-// //     process->m_tss.eip = (dword)e;
+//     auto* process = new Process(move(name), (uid_t)0, (gid_t)0, (pid_t)0, Ring0);
+//     process->m_tss.eip = (dword)e;
 
-// //     if (process->pid() != 0) {
-// //         {
-// //             InterruptDisabler disabler;
-// //             g_processes->prepend(process);
-// //             system.nprocess++;
-// //         }
-// //         ProcFS::the().add_process(*process);
-// // #ifdef TASK_DEBUG
-// //         kprintf("Kernel process %u (%s) spawned @ %p\n", process->pid(), process->name().characters(), process->m_tss.eip);
-// // #endif
-// //     }
+//     if (process->pid() != 0) {
+//         {
+//             // InterruptDisabler disabler;
+            // g_processes->prepend(process);
+//             system.nprocess++;
+//         }
+//         ProcFS::the().add_process(*process);
+// #ifdef TASK_DEBUG
+//         kprintf("Kernel process %u (%s) spawned @ %p\n", process->pid(), process->name().characters(), process->m_tss.eip);
+// #endif
+//     }
 
     return process;
 }
@@ -581,12 +581,12 @@ Process* Process::create_kernel_process(const char* name, void (*entry)())
 Process::Process(const char* name, void (*entry)())
 // Process::Process(String&& name, uid_t uid, gid_t gid, pid_t ppid, RingLevel ring, RetainPtr<Inode>&& cwd, RetainPtr<Inode>&& executable, TTY* tty, Process* fork_parent)
     // : m_name(name)
-//     , m_pid(next_pid++) // FIXME: RACE: This variable looks racy!
+    : m_pid(next_pid++) // FIXME: RACE: This variable looks racy!
 //     , m_uid(uid)
 //     , m_gid(gid)
 //     , m_euid(uid)
 //     , m_egid(gid)
-    : m_state(Runnable)
+    , m_state(Runnable)
 //     , m_ring(ring)
 //     , m_cwd(move(cwd))
 //     , m_executable(move(executable))
@@ -597,7 +597,7 @@ Process::Process(const char* name, void (*entry)())
     for (; i < 31 && name[i] != '\0'; ++i)
         m_name[i] = name[i];
     m_name[i] = '\0';
-    
+
 //     memset(&m_fpu_state, 0, sizeof(FPUState));
 
 //     m_gids.set(m_gid);
@@ -644,6 +644,12 @@ Process::Process(const char* name, void (*entry)())
 //         m_nextRegion = fork_parent->m_nextRegion;
 //     else
 //         m_nextRegion = LinearAddress(0x10000000);
+
+    m_kernel_stack_base = kmalloc(defaultStackSize);
+    if (entry)
+        setup_kernel_stack(entry);
+    else
+        m_kernel_stack_top = 0;
 
 //     if (fork_parent) {
 //         memcpy(&m_tss, &fork_parent->m_tss, sizeof(m_tss));
@@ -720,6 +726,37 @@ Process::~Process()
 //         kfree(m_kernelStack);
 //         m_kernelStack = nullptr;
 //     }
+}
+
+void Process::setup_kernel_stack(void (*entry)())
+{
+    // Stack grows downward，from high memory address
+    uint32_t stack_top = (uint32_t)m_kernel_stack_base + defaultStackSize;
+    uint32_t* stack = (uint32_t*)stack_top;
+
+    // --- Manually push stack (follow the order of pop in switch.S) ---
+    // popa -> popf -> ret
+    
+    // EIP
+    *(--stack) = (uint32_t)entry;
+
+    // 2. EFLAGS
+    // IF=1 (allow interrupt), Reserved=1 -> 0x202
+    *(--stack) = 0x0202;
+
+    // 3. popa
+    // EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI
+    *(--stack) = 0; // EAX
+    *(--stack) = 0; // ECX
+    *(--stack) = 0; // EDX
+    *(--stack) = 0; // EBX
+    *(--stack) = 0; // ESP
+    *(--stack) = 0; // EBP
+    *(--stack) = 0; // ESI
+    *(--stack) = 0; // EDI
+
+    // 4. the final stack top
+    m_kernel_stack_top = (uint32_t)stack;
 }
 
 // void Process::dumpRegions()
@@ -1567,17 +1604,17 @@ Process::~Process()
 //     return m_waitee_pid;
 // }
 
-// void Process::unblock()
-// {
-//     if (current == this) {
-//         system.nblocked--;
-//         m_state = Process::Running;
-//         return;
-//     }
-//     ASSERT(m_state != Process::Runnable && m_state != Process::Running);
-//     system.nblocked--;
-//     m_state = Process::Runnable;
-// }
+void Process::unblock()
+{
+    if (current == this) {
+        system.nblocked--;
+        m_state = Process::Running;
+        return;
+    }
+    // ASSERT(m_state != Process::Runnable && m_state != Process::Running);
+    system.nblocked--;
+    m_state = Process::Runnable;
+}
 
 // void Process::block(Process::State new_state)
 // {

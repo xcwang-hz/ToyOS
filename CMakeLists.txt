@@ -58,6 +58,7 @@ set(I386_SOURCES
     arch/i386/PIC.cpp
     arch/i386/boot.S
     arch/i386/i386.cpp
+    arch/i386/i8253.cpp
     ${KERNEL_COMMON_SOURCES}
 )
 

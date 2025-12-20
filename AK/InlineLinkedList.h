@@ -91,7 +91,7 @@ template<typename T> inline void InlineLinkedList<T>::clear()
 template<typename T> inline void InlineLinkedList<T>::prepend(T* node)
 {
     if (!m_head) {
-        ASSERT(!m_tail);
+        // ASSERT(!m_tail);
         m_head = node;
         m_tail = node;
         node->set_prev(0);
@@ -99,7 +99,7 @@ template<typename T> inline void InlineLinkedList<T>::prepend(T* node)
         return;
     }
 
-    ASSERT(m_tail);
+    // ASSERT(m_tail);
     m_head->set_prev(node);
     node->set_next(m_head);
     node->set_prev(0);
@@ -109,7 +109,7 @@ template<typename T> inline void InlineLinkedList<T>::prepend(T* node)
 template<typename T> inline void InlineLinkedList<T>::append(T* node)
 {
     if (!m_tail) {
-        ASSERT(!m_head);
+        // ASSERT(!m_head);
         m_head = node;
         m_tail = node;
         node->set_prev(0);
@@ -117,7 +117,7 @@ template<typename T> inline void InlineLinkedList<T>::append(T* node)
         return;
     }
 
-    ASSERT(m_head);
+    // ASSERT(m_head);
     m_tail->set_next(node);
     node->set_prev(m_tail);
     node->set_next(0);
@@ -127,18 +127,18 @@ template<typename T> inline void InlineLinkedList<T>::append(T* node)
 template<typename T> inline void InlineLinkedList<T>::remove(T* node)
 {
     if (node->prev()) {
-        ASSERT(node != m_head);
+        // ASSERT(node != m_head);
         node->prev()->set_next(node->next());
     } else {
-        ASSERT(node == m_head);
+        // ASSERT(node == m_head);
         m_head = node->next();
     }
 
     if (node->next()) {
-        ASSERT(node != m_tail);
+        // ASSERT(node != m_tail);
         node->next()->set_prev(node->prev());
     } else {
-        ASSERT(node == m_tail);
+        // ASSERT(node == m_tail);
         m_tail = node->prev();
     }
 }

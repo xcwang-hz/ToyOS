@@ -1,11 +1,12 @@
 #include "Scheduler.h"
 #include "Process.h"
-// #include "system.h"
+#include "kprintf.h"
+#include "system.h"
 
-//#define LOG_EVERY_CONTEXT_SWITCH
+#define LOG_EVERY_CONTEXT_SWITCH
 //#define SCHEDULER_DEBUG
 
-// static const dword time_slice = 5; // *10 = 50ms
+static const dword time_slice = 5; // *10 = 50ms
 
 Process* current;
 // Process* g_last_fpu_process;
@@ -18,8 +19,8 @@ static bool s_in_yield;
 // };
 // static TaskRedirectionData s_redirection;
 
-// bool Scheduler::pick_next()
-// {
+bool Scheduler::pick_next()
+{
 //     ASSERT_INTERRUPTS_DISABLED();
 
 //     if (!current) {
@@ -29,12 +30,12 @@ static bool s_in_yield;
 //     }
 
 //     // Check and unblock processes whose wait conditions have been met.
-//     Process::for_each([] (auto& process) {
-//         if (process.state() == Process::BlockedSleep) {
-//             if (process.wakeupTime() <= system.uptime)
-//                 process.unblock();
-//             return true;
-//         }
+    Process::for_each([] (auto& process) {
+        if (process.state() == Process::BlockedSleep) {
+            if (process.wakeupTime() <= system.uptime)
+                process.unblock();
+            return true;
+        }
 
 //         if (process.state() == Process::BlockedWait) {
 //             process.for_each_child([&process] (Process& child) {
@@ -106,8 +107,8 @@ static bool s_in_yield;
 //             return true;
 //         }
 
-//         return true;
-//     });
+        return true;
+    });
 
 //     // Dispatch any pending signals.
 //     // FIXME: Do we really need this to be a separate pass over the process list?
@@ -143,31 +144,31 @@ static bool s_in_yield;
 //     }
 // #endif
 
-//     auto* prevHead = g_processes->head();
-//     for (;;) {
-//         // Move head to tail.
-//         g_processes->append(g_processes->remove_head());
-//         auto* process = g_processes->head();
+    auto* prevHead = g_processes->head();
+    for (;;) {
+        // Move head to tail.
+        g_processes->append(g_processes->remove_head());
+        auto* process = g_processes->head();
 
-//         if (process->state() == Process::Runnable || process->state() == Process::Running) {
-// #ifdef SCHEDULER_DEBUG
-//             dbgprintf("switch to %s(%u) @ %w:%x\n", process->name().characters(), process->pid(), process->tss().cs, process->tss().eip);
-// #endif
-//             return context_switch(*process);
-//         }
+        if (process->state() == Process::Runnable || process->state() == Process::Running) {
+#ifdef SCHEDULER_DEBUG
+            dbgprintf("switch to %s(%u) @ %w:%x\n", process->name().characters(), process->pid(), process->tss().cs, process->tss().eip);
+#endif
+            return context_switch(*process);
+        }
 
-//         if (process == prevHead) {
-//             // Back at process_head, nothing wants to run. Send in the colonel!
-//             return context_switch(*s_colonel_process);
-//         }
-//     }
-// }
+        if (process == prevHead) {
+            // Back at process_head, nothing wants to run. Send in the colonel!
+            return context_switch(*s_colonel_process);
+        }
+    }
+}
 
 bool Scheduler::yield()
 {
 //     InterruptDisabler disabler;
 //     ASSERT(!s_in_yield);
-//     s_in_yield = true;
+    s_in_yield = true;
 
 //     if (!current) {
 //         kprintf("PANIC: sched_yield() with !current");
@@ -176,12 +177,12 @@ bool Scheduler::yield()
 
 //     //dbgprintf("%s<%u> yield()\n", current->name().characters(), current->pid());
 
-//     if (!pick_next()) {
-//         s_in_yield = false;
-//         return 1;
-//     }
+    if (!pick_next()) {
+        s_in_yield = false;
+        return 1;
+    }
 
-//     s_in_yield = false;
+    s_in_yield = false;
 //     //dbgprintf("yield() jumping to new process: %x (%s)\n", current->farPtr().selector, current->name().characters());
 //     switch_now();
     return 0;
@@ -205,9 +206,9 @@ bool Scheduler::yield()
 //     );
 // }
 
-// bool Scheduler::context_switch(Process& process)
-// {
-//     process.set_ticks_left(time_slice);
+bool Scheduler::context_switch(Process& process)
+{
+    process.set_ticks_left(time_slice);
 //     process.did_schedule();
 
 //     if (process.tss().cs & 3) {
@@ -216,22 +217,23 @@ bool Scheduler::yield()
 //         ++process.m_ticks_in_kernel;
 //     }
 
-//     if (current == &process)
-//         return false;
+    if (current == &process)
+        return false;
 
-//     if (current) {
-//         // If the last process hasn't blocked (still marked as running),
-//         // mark it as runnable for the next round.
-//         if (current->state() == Process::Running)
-//             current->set_state(Process::Runnable);
+    if (current) {
+        // If the last process hasn't blocked (still marked as running),
+        // mark it as runnable for the next round.
+        if (current->state() == Process::Running)
+            current->set_state(Process::Runnable);
 
-// #ifdef LOG_EVERY_CONTEXT_SWITCH
-//         dbgprintf("Scheduler: %s(%u) -> %s(%u)\n", current->name().characters(), current->pid(), process.name().characters(), process.pid());
-// #endif
-//     }
+#ifdef LOG_EVERY_CONTEXT_SWITCH
+        dbgprintf("Scheduler: %s(%u) -> %s(%u)\n", current->name(), current->pid(), process.name(), process.pid());
+        // dbgprintf("Scheduler: %s(%u) -> %s(%u)\n", current->name().characters(), current->pid(), process.name().characters(), process.pid());
+#endif
+    }
 
-//     current = &process;
-//     process.set_state(Process::Running);
+    current = &process;
+    process.set_state(Process::Running);
 
 // #ifdef COOL_GLOBALS
 //     g_cool_globals->current_pid = process.pid();
@@ -253,8 +255,8 @@ bool Scheduler::yield()
 //     auto& descriptor = get_gdt_entry(process.selector());
 //     descriptor.type = 11; // Busy TSS
 //     flush_gdt();
-//     return true;
-// }
+    return true;
+}
 
 // int sched_yield()
 // {
@@ -308,15 +310,15 @@ void Scheduler::initialize()
     // load_task_register(s_redirection.selector);
 }
 
-// void Scheduler::timer_tick(RegisterDump& regs)
-// {
-//     if (!current)
-//         return;
+void Scheduler::timer_tick(RegisterDump& regs)
+{
+    if (!current)
+        return;
 
 //     system.uptime++;
-
-//     if (current->tick())
-//         return;
+    dbgprintf("Scheduler::timer_tick\n");
+    if (current->tick())
+        return;
 
 //     current->tss().gs = regs.gs;
 //     current->tss().fs = regs.fs;
@@ -343,8 +345,8 @@ void Scheduler::initialize()
 //         current->tss().esp = regs.esp_if_crossRing;
 //     }
 
-//     if (!pick_next())
-//         return;
+    if (!pick_next())
+        return;
 //     prepare_for_iret_to_new_process();
 
 //     // Set the NT (nested task) flag.
@@ -353,4 +355,4 @@ void Scheduler::initialize()
 //         "orl $0x00004000, (%esp)\n"
 //         "popf\n"
 //     );
-// }
+}

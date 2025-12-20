@@ -49,3 +49,10 @@ void* kmalloc_eternal(size_t size)
     s_heap_ptr += size;
     return ptr;
 }
+
+void* kmalloc_impl(size_t size)
+{
+    void* ptr = &s_heap[s_heap_ptr];
+    s_heap_ptr += size;
+    return ptr;
+}
