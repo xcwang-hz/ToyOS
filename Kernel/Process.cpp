@@ -563,17 +563,17 @@ Process* Process::create_kernel_process(const char* name, void (*entry)())
 //     auto* process = new Process(move(name), (uid_t)0, (gid_t)0, (pid_t)0, Ring0);
 //     process->m_tss.eip = (dword)e;
 
-//     if (process->pid() != 0) {
-//         {
-//             // InterruptDisabler disabler;
-            // g_processes->prepend(process);
-//             system.nprocess++;
-//         }
-//         ProcFS::the().add_process(*process);
+    if (process->pid() != 0) {
+        {
+            // InterruptDisabler disabler;
+            g_processes->prepend(process);
+            system.nprocess++;
+        }
+        // ProcFS::the().add_process(*process);
 // #ifdef TASK_DEBUG
 //         kprintf("Kernel process %u (%s) spawned @ %p\n", process->pid(), process->name().characters(), process->m_tss.eip);
 // #endif
-//     }
+    }
 
     return process;
 }

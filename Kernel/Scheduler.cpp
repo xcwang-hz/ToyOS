@@ -6,6 +6,7 @@
 #define LOG_EVERY_CONTEXT_SWITCH
 //#define SCHEDULER_DEBUG
 
+extern "C" void context_switch_asm(uint32_t* prev_stack_ptr_addr, uint32_t next_stack_ptr);
 static const dword time_slice = 5; // *10 = 50ms
 
 Process* current;
@@ -208,7 +209,15 @@ bool Scheduler::yield()
 
 bool Scheduler::context_switch(Process& process)
 {
-    process.set_ticks_left(time_slice);
+    if (current == &process)
+        return false;
+
+    Process* prev_process = current;    
+    if (&process == s_colonel_process)
+        process.set_ticks_left(1);
+    else
+        process.set_ticks_left(time_slice);
+
 //     process.did_schedule();
 
 //     if (process.tss().cs & 3) {
@@ -216,9 +225,6 @@ bool Scheduler::context_switch(Process& process)
 //     } else {
 //         ++process.m_ticks_in_kernel;
 //     }
-
-    if (current == &process)
-        return false;
 
     if (current) {
         // If the last process hasn't blocked (still marked as running),
@@ -234,6 +240,7 @@ bool Scheduler::context_switch(Process& process)
 
     current = &process;
     process.set_state(Process::Running);
+    context_switch_asm(&prev_process->m_kernel_stack_top, process.m_kernel_stack_top);
 
 // #ifdef COOL_GLOBALS
 //     g_cool_globals->current_pid = process.pid();
@@ -301,6 +308,7 @@ void Scheduler::initialize()
     // s_redirection.selector = gdt_alloc_entry();
     // initialize_redirection();
     s_colonel_process = Process::create_kernel_process("colonel", nullptr);
+    s_colonel_process->set_ticks_left(1);
     current = s_colonel_process;
     current->set_state(Process::Running);
 
