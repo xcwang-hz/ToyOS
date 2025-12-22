@@ -3,6 +3,25 @@ cmake_minimum_required(VERSION 3.20)
 project(ToyOS LANGUAGES C CXX ASM)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Set default build type to Release if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+
+# Variable to hold flags for wasm-opt (Binaryen)
+set(WASM_OPT_FLAGS "")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-g -O0 -DDEBUG)
+    # For Wasm: keep debug symbols in the final binary
+    set(WASM_OPT_FLAGS "-g") 
+else()
+    add_compile_options(-O2 -DNDEBUG)
+    # For Wasm: strip debug symbols to reduce size
+    set(WASM_OPT_FLAGS "--strip-debug")
+endif()
+
 # ------------------------------------------------------------------------------
 # Global Configuration
 # ------------------------------------------------------------------------------
@@ -81,7 +100,7 @@ target_include_directories(toyos_i386 PRIVATE ${I386_INCLUDES} ${CMAKE_CURRENT_S
 
 target_compile_options(toyos_i386 PRIVATE
     --target=i386-pc-none-elf -march=i386
-    -ffreestanding -O2 -Wall -Wextra -std=c++20
+    -ffreestanding -Wall -Wextra -std=c++20
     -fno-exceptions -fno-rtti -fno-threadsafe-statics
     -nostdinc -fno-pie
     -DI386 -DSERENITY -DKERNEL
@@ -161,7 +180,7 @@ target_include_directories(toyos_wasm PRIVATE ${COMMON_INCLUDES} ${CMAKE_CURRENT
 
 target_compile_options(toyos_wasm PRIVATE
     --target=wasm32
-    -ffreestanding -O2 -Wall -Wextra -std=c++20
+    -ffreestanding -Wall -Wextra -std=c++20
     -fno-exceptions -fno-rtti 
     -nostdinc
     -DWASM -DSERENITY -DKERNEL
@@ -177,6 +196,20 @@ target_link_options(toyos_wasm PRIVATE
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!
     -Wl,--import-memory
     -fuse-ld=lld
+)
+
+# This command runs 'wasm-opt' to rewrite the binary for stack switching.
+add_custom_command(TARGET toyos_wasm POST_BUILD
+    COMMAND wasm-opt $<TARGET_FILE:toyos_wasm>
+            -o $<TARGET_FILE_DIR:toyos_wasm>/toyos_wasm.async.wasm
+            --asyncify
+            --pass-arg=asyncify-imports@env.context_switch_asm
+            --pass-arg=asyncify-ignore-imports
+            ${WASM_OPT_FLAGS}
+    
+    COMMAND mv $<TARGET_FILE_DIR:toyos_wasm>/toyos_wasm.async.wasm $<TARGET_FILE:toyos_wasm>
+    COMMENT "Running Binaryen Asyncify pass..."
+    VERBATIM
 )
 
 # 6. Post-Build Assets Copy
