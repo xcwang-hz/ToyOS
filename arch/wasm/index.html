@@ -29,7 +29,40 @@
     }
   </style>  
   <script>
+    // [Asyncify Helper]
+    // You can find the full source of Asyncify helper in Binaryen's repo 
+    // or Emscripten's src/library_async.js.
+    class Asyncify {
+      constructor() {
+        this.state = 'Normal'; // Normal, Unwinding, Rewinding
+        this.savedDataPtr = 0;
+      }
+      
+      getState() { return this.state; }
+      
+      startUnwind(dataPtr) {
+        this.state = 'Unwinding';
+        this.savedDataPtr = dataPtr;
+        // In a real implementation, this tells Binaryen's runtime to 
+        // start saving the stack to a temporary buffer.
+      }
+      
+      stopRewind() {
+        this.state = 'Normal';
+      }
+      
+      startRewind(dataPtr) {
+        this.state = 'Rewinding';
+        this.savedDataPtr = dataPtr;
+      }
+      
+      getDataPtr() { return this.savedDataPtr; }
+    }
+
+    const asyncify = new Asyncify();
+    let nextProcessCtxPtr = 0; // Stores the pointer for the NEXT process    
     let kernelInstance = null;
+
     const PS2_SCANCODES = {
       "Escape": 0x01, "Digit1": 0x02, "Digit2": 0x03, "Digit3": 0x04, "Digit4": 0x05, "Digit5": 0x06, "Digit6": 0x07, "Digit7": 0x08, 
       "Digit8": 0x09, "Digit9": 0x0A, "Digit0": 0x0B, "Minus": 0x0C, "Equal": 0x0D, "Backspace": 0x0E, "Tab": 0x0F, "KeyQ": 0x10, 
@@ -118,14 +151,58 @@
               else if (ch !== 13) {
                 debugLineBuffer += String.fromCharCode(ch);
               }                
+            },
+            wasm_async_yield: function(prevCtxPtr, nextCtxPtr) {
+              // 1. C++ requested a yield (Unwind Phase)
+              if (asyncify.getState() === 'Normal') {
+                console.log(`[JS] Context Switch: Save to ${prevCtxPtr}, Next is ${nextCtxPtr}`);
+                
+                // Trigger Unwind.
+                // IMPORTANT: We pass 'prevCtxPtr' to Asyncify.
+                // Asyncify will write the stack dump directly to C++ memory 
+                // at the address 'prevCtxPtr' (inside Process struct).
+                asyncify.startUnwind(prevCtxPtr);
+                
+                // Remember who to run next
+                nextProcessCtxPtr = nextCtxPtr;
+              } 
+              // 2. C++ is waking up (Rewind Phase)
+              else {
+                console.log(`[JS] Process Resumed.`);
+                asyncify.stopRewind();
+              }
             }
           }
         };
 
         WebAssembly.instantiateStreaming(fetch("toyos.wasm"), importObject)
-          .then(obj => {
+          .then(async obj => {
               kernelInstance = obj.instance;
-              kernelInstance.exports.kernel_entry(0, 0); 
+
+              while (true) {
+                try {
+                  kernelInstance.exports.kernel_entry(0, 0);
+                } catch (e) {
+                  console.error("Kernel Error:", e);
+                  break;
+                }
+                
+                // 2. If we have a next process scheduled, start Rewinding
+                if (nextProcessCtxPtr !== 0) {
+                  // Give the browser UI a chance to breathe
+                  await new Promise(r => setTimeout(r, 0));
+                  
+                  // Tell Asyncify to restore stack from 'nextProcessCtxPtr'
+                  asyncify.startRewind(nextProcessCtxPtr);
+                  
+                  // Clear the flag to avoid infinite loops if logic fails
+                  // (Optional, depends on your scheduler logic)
+                  // nextProcessCtxPtr = 0; 
+                } else {
+                  // No process to run? Idle or Halt.
+                  break;
+                }
+              }
           });        
       } catch (error) {
         log("kernel failed with (" + error.name + "): " + error.message + "\n" + error.stack);

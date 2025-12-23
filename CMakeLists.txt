@@ -203,7 +203,9 @@ add_custom_command(TARGET toyos_wasm POST_BUILD
     COMMAND wasm-opt $<TARGET_FILE:toyos_wasm>
             -o $<TARGET_FILE_DIR:toyos_wasm>/toyos_wasm.async.wasm
             --asyncify
-            --pass-arg=asyncify-imports@env.context_switch_asm
+            # [CRITICAL] Tell Asyncify: "When C++ calls this import, start unwinding."
+            --pass-arg=asyncify-imports@env.wasm_async_yield
+            # Prevent other imports (like kmalloc) from triggering unwinding
             --pass-arg=asyncify-ignore-imports
             ${WASM_OPT_FLAGS}
     

@@ -46,6 +46,16 @@
 //     byte* framebuffer;
 // };
 
+struct AsyncifyContext {
+    // Defines the start and end of the buffer where Asyncify saves data.
+    // Binaryen expects { void* start; void* end; } structure usually.
+    // Or simpler: just a raw byte array.
+    
+    // Reserve enough space! 1KB is usually enough for simple kernels,
+    // but if you have deep recursion, increase this.    
+    unsigned char buffer[1024];
+};
+
 class Process : public InlineLinkedListNode<Process> {
     // friend class InlineLinkedListNode<Process>;
     // friend class WSWindowManager; // FIXME: Make a better API for allocate_region().
@@ -281,6 +291,8 @@ public:
 
     Process* m_prev { nullptr };
     Process* m_next { nullptr };
+
+    AsyncifyContext m_asyncify_ctx;
 
 private:
     // friend class MemoryManager;

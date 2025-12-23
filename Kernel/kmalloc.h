@@ -3,7 +3,7 @@
 //#define KMALLOC_DEBUG_LARGE_ALLOCATIONS
 
 void kmalloc_init();
-void* kmalloc_impl(dword size) __attribute__ ((malloc));
+void* kmalloc_impl(size_t size) __attribute__ ((malloc));
 void* kmalloc_eternal(size_t) __attribute__ ((malloc));
 void* kmalloc_page_aligned(size_t) __attribute__ ((malloc));
 void* kmalloc_aligned(size_t, size_t alignment) __attribute__ ((malloc));
