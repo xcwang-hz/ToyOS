@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug ToyOS",
+            "name": "Debug ToyOS (i386)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/i386/toyos.bin",
@@ -27,6 +27,17 @@
                     "ignoreFailures": false
                 }                
             ]
-        }
+        },
+        {
+            "name": "Debug ToyOS (wasm)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8000/build/wasm/index.html",
+            "webRoot": "${workspaceFolder}",
+            "runtimeArgs": [
+                "--auto-open-devtools-for-tabs"
+            ],
+            "userDataDir": false            
+        }        
     ]
 }

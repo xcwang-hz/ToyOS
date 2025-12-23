@@ -171,38 +171,47 @@
                 console.log(`[JS] Process Resumed.`);
                 asyncify.stopRewind();
               }
-            }
+            },
+
+            // [Required System Imports]
+            // These are called by the code injected by wasm-opt
+            asyncify_get_state: () => asyncify.getState(),
+            asyncify_start_unwind: (p) => asyncify.startUnwind(p),
+            asyncify_stop_unwind: () => { /* No-op for minimal implementation */ },
+            asyncify_start_rewind: (p) => asyncify.startRewind(p),
+            asyncify_stop_rewind: () => asyncify.stopRewind(),            
           }
         };
 
         WebAssembly.instantiateStreaming(fetch("toyos.wasm"), importObject)
           .then(async obj => {
-              kernelInstance = obj.instance;
+            console.log("Wasm Instantiated. Starting Kernel...");
+            kernelInstance = obj.instance;
 
-              while (true) {
-                try {
-                  kernelInstance.exports.kernel_entry(0, 0);
-                } catch (e) {
-                  console.error("Kernel Error:", e);
-                  break;
-                }
-                
-                // 2. If we have a next process scheduled, start Rewinding
-                if (nextProcessCtxPtr !== 0) {
-                  // Give the browser UI a chance to breathe
-                  await new Promise(r => setTimeout(r, 0));
-                  
-                  // Tell Asyncify to restore stack from 'nextProcessCtxPtr'
-                  asyncify.startRewind(nextProcessCtxPtr);
-                  
-                  // Clear the flag to avoid infinite loops if logic fails
-                  // (Optional, depends on your scheduler logic)
-                  // nextProcessCtxPtr = 0; 
-                } else {
-                  // No process to run? Idle or Halt.
-                  break;
-                }
+            while (true) {
+              try {
+                kernelInstance.exports.kernel_entry(0, 0);
+              } catch (e) {
+                console.error("Kernel Error:", e);
+                break;
               }
+              
+              // 2. If we have a next process scheduled, start Rewinding
+              if (nextProcessCtxPtr !== 0) {
+                // Give the browser UI a chance to breathe
+                await new Promise(r => setTimeout(r, 0));
+                
+                // Tell Asyncify to restore stack from 'nextProcessCtxPtr'
+                asyncify.startRewind(nextProcessCtxPtr);
+                
+                // Clear the flag to avoid infinite loops if logic fails
+                // (Optional, depends on your scheduler logic)
+                // nextProcessCtxPtr = 0; 
+              } else {
+                // No process to run? Idle or Halt.
+                break;
+              }
+            }
           });        
       } catch (error) {
         log("kernel failed with (" + error.name + "): " + error.message + "\n" + error.stack);
