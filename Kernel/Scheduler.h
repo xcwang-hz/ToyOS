@@ -11,7 +11,11 @@ extern Process* current;
 class Scheduler {
 public:
     static void initialize();
+#ifdef I386
     static void timer_tick(RegisterDump&);
+#else
+    static void timer_tick();
+#endif    
     static bool pick_next();
 //     static void pick_next_and_switch_now();
 //     static void switch_now();

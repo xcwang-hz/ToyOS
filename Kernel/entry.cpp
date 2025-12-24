@@ -54,6 +54,7 @@ struct multiboot_info_t {
 Terminal* terminal1 = nullptr;
 Terminal* terminal2 = nullptr;
 system_t system;
+bool initialized = false;
 
 void task1_entry() {
     while (true) {
@@ -78,56 +79,63 @@ void task2_entry() {
 
 Keyboard* keyboard;
 extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
+    if (!initialized) { 
 #ifdef I386
-    if (magic != 0x2BADB002)
-        return; // Not Multiboot
-    if (!(mbd->flags & (1 << 12)))
-        return; // Not in graphics mode
+        if (magic != 0x2BADB002)
+            return; // Not Multiboot
+        if (!(mbd->flags & (1 << 12)))
+            return; // Not in graphics mode
 
-    int w = mbd->framebuffer_width;
-    int h = mbd->framebuffer_height;        
+        int w = mbd->framebuffer_width;
+        int h = mbd->framebuffer_height;        
 
-    cli();
-    // RTC::initialize();
-    PIC::initialize();
-    //gdt_init();
-    idt_init();
-    keyboard = new Keyboard;
-    PIT::initialize();
+        cli();
+        // RTC::initialize();
+        PIC::initialize();
+        //gdt_init();
+        idt_init();
+        keyboard = new Keyboard;
+        PIT::initialize();
 #else
-    (void)magic;
-    (void)mbd;
-    int w = SCREEN_WIDTH;
-    int h = SCREEN_HEIGHT;    
+        (void)magic;
+        (void)mbd;
+        int w = SCREEN_WIDTH;
+        int h = SCREEN_HEIGHT;    
 #endif        
 
-    Size size(w, h);
+        Size size(w, h);
 #ifdef I386    
-    RGBA32* fb_ptr = (RGBA32*)((uint32_t)mbd->framebuffer_addr);
+        RGBA32* fb_ptr = (RGBA32*)((uint32_t)mbd->framebuffer_addr);
 #else
-    RGBA32* fb_ptr = (RGBA32*)wasm_framebuffer;
+        RGBA32* fb_ptr = (RGBA32*)wasm_framebuffer;
 #endif        
 
-    dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
+        dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
 
-    Process::initialize();
+        Process::initialize();
 
-    terminal1 = new Terminal({0,0});
-    terminal2 = new Terminal({w/2,h/2});
-    terminal1->create_window(size, fb_ptr);
-    terminal2->create_window(size, fb_ptr);
+        terminal1 = new Terminal({0,0});
+        terminal2 = new Terminal({w/2,h/2});
+        terminal1->create_window(size, fb_ptr);
+        terminal2->create_window(size, fb_ptr);
 
-    Process::create_kernel_process("Terminal1", task1_entry);
-    Process::create_kernel_process("Terminal2", task2_entry);
+        Process::create_kernel_process("Terminal1", task1_entry);
+        Process::create_kernel_process("Terminal2", task2_entry);
 
-    terminal1->paint();
-    terminal2->paint();
+        terminal1->paint();
+        terminal2->paint();
+        initialized = true;
+
+#ifdef WASM
+        canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+#endif        
+    }
 
 #ifdef I386
     sti();
     for (;;)
         asm("hlt");
 #else
-    canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+    Scheduler::timer_tick();    
 #endif
 }

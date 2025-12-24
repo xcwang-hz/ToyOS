@@ -29,37 +29,6 @@
     }
   </style>  
   <script>
-    // [Asyncify Helper]
-    // You can find the full source of Asyncify helper in Binaryen's repo 
-    // or Emscripten's src/library_async.js.
-    class Asyncify {
-      constructor() {
-        this.state = 'Normal'; // Normal, Unwinding, Rewinding
-        this.savedDataPtr = 0;
-      }
-      
-      getState() { return this.state; }
-      
-      startUnwind(dataPtr) {
-        this.state = 'Unwinding';
-        this.savedDataPtr = dataPtr;
-        // In a real implementation, this tells Binaryen's runtime to 
-        // start saving the stack to a temporary buffer.
-      }
-      
-      stopRewind() {
-        this.state = 'Normal';
-      }
-      
-      startRewind(dataPtr) {
-        this.state = 'Rewinding';
-        this.savedDataPtr = dataPtr;
-      }
-      
-      getDataPtr() { return this.savedDataPtr; }
-    }
-
-    const asyncify = new Asyncify();
     let nextProcessCtxPtr = 0; // Stores the pointer for the NEXT process    
     let kernelInstance = null;
 
@@ -154,32 +123,16 @@
             },
             wasm_async_yield: function(prevCtxPtr, nextCtxPtr) {
               // 1. C++ requested a yield (Unwind Phase)
-              if (asyncify.getState() === 'Normal') {
+              if (kernelInstance.exports.asyncify_get_state() == 0) {
                 console.log(`[JS] Context Switch: Save to ${prevCtxPtr}, Next is ${nextCtxPtr}`);
-                
-                // Trigger Unwind.
-                // IMPORTANT: We pass 'prevCtxPtr' to Asyncify.
-                // Asyncify will write the stack dump directly to C++ memory 
-                // at the address 'prevCtxPtr' (inside Process struct).
-                asyncify.startUnwind(prevCtxPtr);
-                
-                // Remember who to run next
+                kernelInstance.exports.asyncify_start_unwind(prevCtxPtr);
                 nextProcessCtxPtr = nextCtxPtr;
-              } 
-              // 2. C++ is waking up (Rewind Phase)
+              }
               else {
                 console.log(`[JS] Process Resumed.`);
-                asyncify.stopRewind();
+                kernelInstance.exports.asyncify_stop_rewind();
               }
-            },
-
-            // [Required System Imports]
-            // These are called by the code injected by wasm-opt
-            asyncify_get_state: () => asyncify.getState(),
-            asyncify_start_unwind: (p) => asyncify.startUnwind(p),
-            asyncify_stop_unwind: () => { /* No-op for minimal implementation */ },
-            asyncify_start_rewind: (p) => asyncify.startRewind(p),
-            asyncify_stop_rewind: () => asyncify.stopRewind(),            
+            }
           }
         };
 
@@ -201,8 +154,7 @@
                 // Give the browser UI a chance to breathe
                 await new Promise(r => setTimeout(r, 0));
                 
-                // Tell Asyncify to restore stack from 'nextProcessCtxPtr'
-                asyncify.startRewind(nextProcessCtxPtr);
+                kernelInstance.exports.asyncify_start_rewind(nextProcessCtxPtr);
                 
                 // Clear the flag to avoid infinite loops if logic fails
                 // (Optional, depends on your scheduler logic)

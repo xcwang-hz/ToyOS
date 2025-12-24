@@ -333,7 +333,11 @@ void Scheduler::initialize()
     // load_task_register(s_redirection.selector);
 }
 
+#ifdef I386
 void Scheduler::timer_tick(RegisterDump& regs)
+#else
+void Scheduler::timer_tick()
+#endif
 {
     if (!current)
         return;
