@@ -29,7 +29,8 @@
     }
   </style>  
   <script>
-    let nextProcessCtxPtr = 0; // Stores the pointer for the NEXT process    
+    let nextProcessCtxPtr = 0; // Stores the pointer for the NEXT process   
+    const initializedContexts = new Set(); 
     let kernelInstance = null;
 
     const PS2_SCANCODES = {
@@ -126,6 +127,7 @@
               if (kernelInstance.exports.asyncify_get_state() == 0) {
                 console.log(`[JS] Context Switch: Save to ${prevCtxPtr}, Next is ${nextCtxPtr}`);
                 kernelInstance.exports.asyncify_start_unwind(prevCtxPtr);
+                initializedContexts.add(prevCtxPtr);
                 nextProcessCtxPtr = nextCtxPtr;
               }
               else {
@@ -154,7 +156,17 @@
                 // Give the browser UI a chance to breathe
                 await new Promise(r => setTimeout(r, 0));
                 
-                kernelInstance.exports.asyncify_start_rewind(nextProcessCtxPtr);
+                if (initializedContexts.has(nextProcessCtxPtr)) {
+                  console.log(`[JS] Rewinding existing process: ${nextProcessCtxPtr}`);
+                  kernelInstance.exports.asyncify_start_rewind(nextProcessCtxPtr);
+                }
+                else {
+                  if (kernelInstance.exports.asyncify_get_state() !== 0) {
+                    // kernelInstance.exports.asyncify_stop_rewind();
+                  }                  
+                  console.log(`[JS] Starting NEW process: ${nextProcessCtxPtr}`);
+                  kernelInstance.exports.kernel_entry(0, 0);
+                }
                 
                 // Clear the flag to avoid infinite loops if logic fails
                 // (Optional, depends on your scheduler logic)

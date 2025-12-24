@@ -293,6 +293,8 @@ public:
     Process* m_next { nullptr };
 
     AsyncifyContext m_asyncify_ctx;
+    bool m_is_first_time;
+    void (*m_entry)() { nullptr };
 
 private:
     // friend class MemoryManager;
@@ -313,7 +315,6 @@ private:
 
 
     char m_name[32];
-    void (*m_entry)() { nullptr };
     pid_t m_pid { 0 };
     // uid_t m_uid { 0 };
     // gid_t m_gid { 0 };

@@ -57,24 +57,24 @@ system_t system;
 bool initialized = false;
 
 void task1_entry() {
-    while (true) {
+    // while (true) {
         terminal1->on_char('A');
         terminal1->paint(); 
 
         Scheduler::yield(); 
         
         for (int i = 0; i < 1000000; i++); 
-    }
+    // }
 }
 
 void task2_entry() {
-    while (true) {
+    // while (true) {
         terminal2->on_char('B');
         terminal2->paint();
         
         Scheduler::yield();
         for (int i = 0; i < 2000000; i++);
-    }
+    // }
 }
 
 Keyboard* keyboard;
@@ -136,6 +136,15 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
     for (;;)
         asm("hlt");
 #else
+    if (!current)
+        return;
+
+    if (current->m_is_first_time) {
+        current->m_is_first_time = false;
+        if (current->m_entry) {
+            current->m_entry();
+        }
+    }
     Scheduler::timer_tick();    
 #endif
 }

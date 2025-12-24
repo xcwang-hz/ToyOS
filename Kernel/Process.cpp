@@ -581,7 +581,8 @@ Process* Process::create_kernel_process(const char* name, void (*entry)())
 Process::Process(const char* name, void (*entry)())
 // Process::Process(String&& name, uid_t uid, gid_t gid, pid_t ppid, RingLevel ring, RetainPtr<Inode>&& cwd, RetainPtr<Inode>&& executable, TTY* tty, Process* fork_parent)
     // : m_name(name)
-    : m_pid(next_pid++) // FIXME: RACE: This variable looks racy!
+    : m_entry(entry)
+    , m_pid(next_pid++) // FIXME: RACE: This variable looks racy!
 //     , m_uid(uid)
 //     , m_gid(gid)
 //     , m_euid(uid)
@@ -593,6 +594,7 @@ Process::Process(const char* name, void (*entry)())
 //     , m_tty(tty)
 //     , m_ppid(ppid)
 {
+    m_is_first_time = true;
     int i = 0;
     for (; i < 31 && name[i] != '\0'; ++i)
         m_name[i] = name[i];
