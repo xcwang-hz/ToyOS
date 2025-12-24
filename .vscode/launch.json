@@ -34,10 +34,11 @@
             "request": "launch",
             "url": "http://localhost:8000/build/wasm/index.html",
             "webRoot": "${workspaceFolder}",
-            "runtimeArgs": [
-                "--auto-open-devtools-for-tabs"
-            ],
-            "userDataDir": false            
+            "sourceMapPathOverrides": {
+                "file:///home/xiaochu/code/ToyOS/*": "${workspaceFolder}/*",
+                "/home/xiaochu/code/ToyOS/*": "${workspaceFolder}/*",
+                "../Kernel/*": "${workspaceFolder}/Kernel/*"
+            }
         }        
     ]
 }
