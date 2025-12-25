@@ -81,13 +81,8 @@
         }
       };      
 
-      window.addEventListener('keydown', (e) => {
-        handleKeyEvent(e, true);
-      });
-
-      window.addEventListener('keyup', (e) => {
-        handleKeyEvent(e, false);
-      });      
+      window.addEventListener('keydown', (e) => handleKeyEvent(e, true));
+      window.addEventListener('keyup', (e) => handleKeyEvent(e, false));      
 
       try {
         const importObject = {
@@ -96,19 +91,8 @@
 
             // [Graphics Interface]
             canvas_refresh: (ptr, width, height) => {
-              // Auto-detection: If this function is called, we are in Graphics Mode.
-              // Make the canvas container visible if it isn't already.
-              // console.log('Graphics signal received. Displaying monitor');
-              // console.log("JS received ptr:", ptr, "(Hex: 0x" + ptr.toString(16) + ")");
-
-              // Calculate buffer size: Width * Height * 4 bytes (RGBA)
               const bufferSize = width * height * 4;
-
-              // Create a view into the Wasm memory (Shared Memory)
-              // Uint8ClampedArray is required for ImageData
               const dataArray = new Uint8ClampedArray(wasmMemory.buffer, ptr, bufferSize);
-
-              // Create ImageData and draw it to the canvas
               const imgData = new ImageData(dataArray, width, height);
               ctx.putImageData(imgData, 0, 0);
             },
@@ -142,37 +126,38 @@
           .then(async obj => {
             console.log("Wasm Instantiated. Starting Kernel...");
             kernelInstance = obj.instance;
+            try {
+              kernelInstance.exports.kernel_entry(0, 0);
+            } catch (e) {
+              console.error("Kernel Error (Init):", e);
+              return;
+            }
 
             while (true) {
+              if (nextProcessCtxPtr === 0)
+                break;
+
+              // Give the browser main thread a chance to render UI/handle inputs
+              await new Promise(r => setTimeout(r, 0));
+              
+              if (initializedContexts.has(nextProcessCtxPtr)) {
+                console.log(`[JS] Rewinding existing process: ${nextProcessCtxPtr}`);
+                kernelInstance.exports.asyncify_start_rewind(nextProcessCtxPtr);
+              }
+              else {
+                console.log(`[JS] Starting NEW process: ${nextProcessCtxPtr}`);
+                if (kernelInstance.exports.asyncify_get_state() !== 0) {
+                  if (kernelInstance.exports.asyncify_stop_unwind)
+                    kernelInstance.exports.asyncify_stop_unwind();
+                  else
+                    kernelInstance.exports.asyncify_stop_rewind();
+                }                  
+              }
+              
               try {
                 kernelInstance.exports.kernel_entry(0, 0);
               } catch (e) {
-                console.error("Kernel Error:", e);
-                break;
-              }
-              
-              // 2. If we have a next process scheduled, start Rewinding
-              if (nextProcessCtxPtr !== 0) {
-                // Give the browser UI a chance to breathe
-                await new Promise(r => setTimeout(r, 0));
-                
-                if (initializedContexts.has(nextProcessCtxPtr)) {
-                  console.log(`[JS] Rewinding existing process: ${nextProcessCtxPtr}`);
-                  kernelInstance.exports.asyncify_start_rewind(nextProcessCtxPtr);
-                }
-                else {
-                  if (kernelInstance.exports.asyncify_get_state() !== 0) {
-                    // kernelInstance.exports.asyncify_stop_rewind();
-                  }                  
-                  console.log(`[JS] Starting NEW process: ${nextProcessCtxPtr}`);
-                  kernelInstance.exports.kernel_entry(0, 0);
-                }
-                
-                // Clear the flag to avoid infinite loops if logic fails
-                // (Optional, depends on your scheduler logic)
-                // nextProcessCtxPtr = 0; 
-              } else {
-                // No process to run? Idle or Halt.
+                console.error("Kernel Error (Loop):", e);
                 break;
               }
             }

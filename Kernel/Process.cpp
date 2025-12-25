@@ -647,6 +647,9 @@ Process::Process(const char* name, void (*entry)())
 //     else
 //         m_nextRegion = LinearAddress(0x10000000);
 
+    m_asyncify_ctx.stack_start = m_asyncify_ctx.buffer;
+    m_asyncify_ctx.stack_end = m_asyncify_ctx.buffer + sizeof(m_asyncify_ctx.buffer);
+    
     m_kernel_stack_base = kmalloc(defaultStackSize);
     if (entry)
         setup_kernel_stack(entry);

@@ -50,10 +50,12 @@ struct AsyncifyContext {
     // Defines the start and end of the buffer where Asyncify saves data.
     // Binaryen expects { void* start; void* end; } structure usually.
     // Or simpler: just a raw byte array.
+    void* stack_start;
+    void* stack_end;
     
     // Reserve enough space! 1KB is usually enough for simple kernels,
     // but if you have deep recursion, increase this.    
-    unsigned char buffer[1024];
+    uint8_t buffer[65536];
 };
 
 class Process : public InlineLinkedListNode<Process> {

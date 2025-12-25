@@ -39,6 +39,17 @@
                 "/home/xiaochu/code/ToyOS/*": "${workspaceFolder}/*",
                 "../Kernel/*": "${workspaceFolder}/Kernel/*"
             }
-        }        
+        },
+        {
+            "name": "Attach ToyOS (wasm)",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9222,
+            "webRoot": "${workspaceFolder}",
+            "urlFilter": "http://127.0.0.1:8000/*",
+            "timeout": 60000,
+            "trace": true,
+            "showAsyncStacks": true
+        }                
     ]
 }

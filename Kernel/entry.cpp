@@ -60,7 +60,9 @@ void task1_entry() {
     // while (true) {
         terminal1->on_char('A');
         terminal1->paint(); 
-
+#ifdef WASM
+        canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+#endif            
         Scheduler::yield(); 
         
         for (int i = 0; i < 1000000; i++); 
@@ -71,7 +73,9 @@ void task2_entry() {
     // while (true) {
         terminal2->on_char('B');
         terminal2->paint();
-        
+#ifdef WASM
+        canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+#endif            
         Scheduler::yield();
         for (int i = 0; i < 2000000; i++);
     // }
@@ -79,7 +83,7 @@ void task2_entry() {
 
 Keyboard* keyboard;
 extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
-    if (!initialized) { 
+    if (!initialized) {
 #ifdef I386
         if (magic != 0x2BADB002)
             return; // Not Multiboot
