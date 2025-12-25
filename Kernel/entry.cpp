@@ -57,28 +57,22 @@ system_t system;
 bool initialized = false;
 
 void task1_entry() {
-    // while (true) {
+    while (true) {
         terminal1->on_char('A');
         terminal1->paint(); 
-#ifdef WASM
-        canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
-#endif            
         Scheduler::yield(); 
         
         for (int i = 0; i < 1000000; i++); 
-    // }
+    }
 }
 
 void task2_entry() {
-    // while (true) {
+    while (true) {
         terminal2->on_char('B');
         terminal2->paint();
-#ifdef WASM
-        canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
-#endif            
         Scheduler::yield();
         for (int i = 0; i < 2000000; i++);
-    // }
+    }
 }
 
 Keyboard* keyboard;
@@ -131,7 +125,7 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         initialized = true;
 
 #ifdef WASM
-        canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+        canvas_init(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
 #endif        
     }
 

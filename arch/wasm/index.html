@@ -53,6 +53,7 @@
 
       const canvas = document.getElementById('screen');
       const ctx = canvas.getContext('2d');
+      let sharedImgData = null;
 
       let debugLineBuffer = "";
       // initial: 256 pages = 16MB
@@ -90,11 +91,10 @@
             memory: wasmMemory,
 
             // [Graphics Interface]
-            canvas_refresh: (ptr, width, height) => {
+            canvas_init: (ptr, width, height) => {
               const bufferSize = width * height * 4;
               const dataArray = new Uint8ClampedArray(wasmMemory.buffer, ptr, bufferSize);
-              const imgData = new ImageData(dataArray, width, height);
-              ctx.putImageData(imgData, 0, 0);
+              sharedImgData = new ImageData(dataArray, width, height);
             },
 
             js_debug_char: (ch) => {
@@ -156,6 +156,7 @@
               
               try {
                 kernelInstance.exports.kernel_entry(0, 0);
+                ctx.putImageData(sharedImgData, 0, 0);
               } catch (e) {
                 console.error("Kernel Error (Loop):", e);
                 break;

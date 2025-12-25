@@ -4,7 +4,6 @@
 #include <SharedGraphics/Painter.h>
 #include <Kernel/Keyboard.h>
 #include "kprintf.h"
-#include "entry.h"
 // #include <AK/StdLibExtras.h>
 // #include <LibC/stdlib.h>
 // #include <LibC/unistd.h>
@@ -720,7 +719,4 @@ void Terminal::on_key_pressed(Keyboard::Event key)
 
     on_char(key.character);
     paint();
-#ifdef WASM
-    canvas_refresh(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
-#endif
 }
