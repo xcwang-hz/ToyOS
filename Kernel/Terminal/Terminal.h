@@ -2,7 +2,7 @@
 
 // #include <AK/AKString.h>
 // #include <AK/Types.h>
-// #include <AK/Vector.h>
+#include <AK/Vector.h>
 #include <Kernel/Keyboard.h>
 #include <SharedGraphics/GraphicsBitmap.h>
 #include <SharedGraphics/Rect.h>
@@ -34,7 +34,7 @@ private:
 //     void invalidate_window(const Rect& = Rect());
 //     void set_window_title(const String&);
 
-//     void escape$A(const Vector<unsigned>&);
+    void escape$A(const Vector<unsigned>&);
 //     void escape$B(const Vector<unsigned>&);
 //     void escape$C(const Vector<unsigned>&);
 //     void escape$D(const Vector<unsigned>&);
@@ -94,7 +94,7 @@ private:
 
 //     Attribute& attribute_at(word row, word column);
 
-//     void execute_escape_sequence(byte final);
+    void execute_escape_sequence(byte final);
 //     void execute_xterm_command();
 
     enum EscapeState {
@@ -109,8 +109,8 @@ private:
         ExpectXtermFinal,
     };
     EscapeState m_escape_state { Normal };
-//     Vector<byte> m_parameters;
-//     Vector<byte> m_intermediates;
+    Vector<byte> m_parameters;
+    Vector<byte> m_intermediates;
 //     Vector<byte> m_xterm_param1;
 //     Vector<byte> m_xterm_param2;
     byte* m_horizontal_tabs { nullptr };

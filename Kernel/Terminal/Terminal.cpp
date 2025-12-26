@@ -104,20 +104,20 @@ void Terminal::clear()
     set_cursor(0, 0);
 }
 
-// inline bool is_valid_parameter_character(byte ch)
-// {
-//     return ch >= 0x30 && ch <= 0x3f;
-// }
+inline bool is_valid_parameter_character(byte ch)
+{
+    return ch >= 0x30 && ch <= 0x3f;
+}
 
-// inline bool is_valid_intermediate_character(byte ch)
-// {
-//     return ch >= 0x20 && ch <= 0x2f;
-// }
+inline bool is_valid_intermediate_character(byte ch)
+{
+    return ch >= 0x20 && ch <= 0x2f;
+}
 
-// inline bool is_valid_final_character(byte ch)
-// {
-//     return ch >= 0x40 && ch <= 0x7e;
-// }
+inline bool is_valid_final_character(byte ch)
+{
+    return ch >= 0x40 && ch <= 0x7e;
+}
 
 // unsigned parseUInt(const String& str, bool& ok)
 // {
@@ -236,18 +236,18 @@ static inline Color ansi_color(unsigned color)
 //     set_cursor(row - 1, col - 1);
 // }
 
-// void Terminal::escape$A(const Vector<unsigned>& params)
-// {
-//     int num = 1;
-//     if (params.size() >= 1)
-//         num = params[0];
-//     if (num == 0)
-//         num = 1;
-//     int new_row = (int)m_cursor_row - num;
-//     if (new_row < 0)
-//         new_row = 0;
-//     set_cursor(new_row, m_cursor_column);
-// }
+void Terminal::escape$A(const Vector<unsigned>& params)
+{
+    int num = 1;
+    if (params.size() >= 1)
+        num = params[0];
+    if (num == 0)
+        num = 1;
+    int new_row = (int)m_cursor_row - num;
+    if (new_row < 0)
+        new_row = 0;
+    set_cursor(new_row, m_cursor_column);
+}
 
 // void Terminal::escape$B(const Vector<unsigned>& params)
 // {
@@ -357,38 +357,38 @@ static inline Color ansi_color(unsigned color)
 //     m_xterm_param2.clear_with_capacity();
 // }
 
-// void Terminal::execute_escape_sequence(byte final)
-// {
-//     auto paramparts = String((const char*)m_parameters.data(), m_parameters.size()).split(';');
-//     Vector<unsigned> params;
-//     for (auto& parampart : paramparts) {
-//         bool ok;
-//         unsigned value = parseUInt(parampart, ok);
-//         if (!ok) {
-//             // FIXME: Should we do something else?
-//             return;
-//         }
-//         params.append(value);
-//     }
-//     switch (final) {
-//     case 'A': escape$A(params); break;
-//     case 'B': escape$B(params); break;
-//     case 'C': escape$C(params); break;
-//     case 'D': escape$D(params); break;
-//     case 'H': escape$H(params); break;
-//     case 'J': escape$J(params); break;
-//     case 'K': escape$K(params); break;
-//     case 'm': escape$m(params); break;
-//     case 's': escape$s(params); break;
-//     case 'u': escape$u(params); break;
-//     default:
-//         dbgprintf("Terminal::execute_escape_sequence: Unhandled final '%c'\n", final);
-//         break;
-//     }
+void Terminal::execute_escape_sequence(byte final)
+{
+    auto paramparts = String((const char*)m_parameters.data(), m_parameters.size()).split(';');
+    Vector<unsigned> params;
+    for (auto& parampart : paramparts) {
+        bool ok;
+        // unsigned value = parseUInt(parampart, ok);
+        // if (!ok) {
+        //     // FIXME: Should we do something else?
+        //     return;
+        // }
+        // params.append(value);
+    }
+    switch (final) {
+    case 'A': escape$A(params); break;
+    // case 'B': escape$B(params); break;
+    // case 'C': escape$C(params); break;
+    // case 'D': escape$D(params); break;
+    // case 'H': escape$H(params); break;
+    // case 'J': escape$J(params); break;
+    // case 'K': escape$K(params); break;
+    // case 'm': escape$m(params); break;
+    // case 's': escape$s(params); break;
+    // case 'u': escape$u(params); break;
+    default:
+        dbgprintf("Terminal::execute_escape_sequence: Unhandled final '%c'\n", final);
+        break;
+    }
 
-//     m_parameters.clear();
-//     m_intermediates.clear();
-// }
+    m_parameters.clear();
+    m_intermediates.clear();
+}
 
 // void Terminal::scroll_up()
 // {
@@ -435,9 +435,9 @@ void Terminal::on_char(byte ch)
     dbgprintf("Terminal::on_char: %b (%c)\n", ch, ch);
 #endif
     switch (m_escape_state) {
-//     case ExpectBracket:
-//         if (ch == '[')
-//             m_escape_state = ExpectParameter;
+    case ExpectBracket:
+        if (ch == '[')
+            m_escape_state = ExpectParameter;
 //         else if (ch == ']')
 //             m_escape_state = ExpectXtermParameter1;
 //         else
@@ -463,38 +463,38 @@ void Terminal::on_char(byte ch)
 //             execute_xterm_command();
 //         return;
 
-//     case ExpectParameter:
-//         if (is_valid_parameter_character(ch)) {
-//             m_parameters.append(ch);
-//             return;
-//         }
-//         m_escape_state = ExpectIntermediate;
-//         // fall through
-//     case ExpectIntermediate:
-//         if (is_valid_intermediate_character(ch)) {
-//             m_intermediates.append(ch);
-//             return;
-//         }
-//         m_escape_state = ExpectFinal;
-//         // fall through
-//     case ExpectFinal:
-//         if (is_valid_final_character(ch)) {
-//             m_escape_state = Normal;
-//             execute_escape_sequence(ch);
-//             return;
-//         }
-//         m_escape_state = Normal;
-//         return;
+    case ExpectParameter:
+        if (is_valid_parameter_character(ch)) {
+            m_parameters.append(ch);
+            return;
+        }
+        m_escape_state = ExpectIntermediate;
+        // fall through
+    case ExpectIntermediate:
+        if (is_valid_intermediate_character(ch)) {
+            m_intermediates.append(ch);
+            return;
+        }
+        m_escape_state = ExpectFinal;
+        // fall through
+    case ExpectFinal:
+        if (is_valid_final_character(ch)) {
+            m_escape_state = Normal;
+            execute_escape_sequence(ch);
+            return;
+        }
+        m_escape_state = Normal;
+        return;
     case Normal:
         break;
     }
 
-//     switch (ch) {
+    switch (ch) {
 //     case '\0':
 //         return;
-//     case '\033':
-//         m_escape_state = ExpectBracket;
-//         return;
+    case '\033':
+        m_escape_state = ExpectBracket;
+        return;
 //     case 8: // Backspace
 //         if (m_cursor_column) {
 //             set_cursor(m_cursor_row, m_cursor_column - 1);
@@ -520,7 +520,7 @@ void Terminal::on_char(byte ch)
 //     case '\n':
 //         scroll_up();
 //         return;
-//     }
+    }
 
     auto new_column = m_cursor_column + 1;
     if (new_column < columns()) {

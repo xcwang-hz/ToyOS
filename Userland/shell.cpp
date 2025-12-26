@@ -5,7 +5,7 @@ void shell_main() {
     char cmd_buffer[128];
     
     // Clear screen (optional, depends on terminal support)
-    // printf("\033[2J\033[H"); 
+    printf("\033[2J\033[H"); 
 
     printf("\n\n=== ToyOS Shell (User Space) ===\n");
     // printf("Type 'help' for a list of commands.\n");

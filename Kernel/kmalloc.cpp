@@ -21,6 +21,11 @@ void* kmalloc_impl(size_t size)
     return ptr;
 }
 
+void kfree(void* ptr)
+{
+    // free(ptr);
+}
+
 void* operator new(size_t size, std::align_val_t al)
 {
     (void)al; 

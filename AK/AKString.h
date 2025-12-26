@@ -2,9 +2,9 @@
 
 // #include "ByteBuffer.h"
 #include "RetainPtr.h"
-// #include "StringImpl.h"
+#include "StringImpl.h"
 // #include "Traits.h"
-// #include "Vector.h"
+#include "Vector.h"
 // #include "kstdio.h"
 
 namespace AK {
@@ -29,10 +29,10 @@ public:
 //     {
 //     }
 
-//     String(const char* cstring, size_t length, ShouldChomp shouldChomp = NoChomp)
-//         : m_impl(StringImpl::create(cstring, length, shouldChomp))
-//     {
-//     }
+    String(const char* cstring, size_t length, ShouldChomp shouldChomp = NoChomp)
+        : m_impl(StringImpl::create(cstring, length, shouldChomp))
+    {
+    }
 
 //     String(const StringImpl& impl)
 //         : m_impl(const_cast<StringImpl&>(impl))
@@ -60,7 +60,7 @@ public:
 //         return m_impl->to_uppercase();
 //     }
 
-//     Vector<String> split(char separator) const;
+    Vector<String> split(char separator) const;
 //     String substring(size_t start, size_t length) const;
 
 //     bool is_null() const { return !m_impl; }
@@ -95,8 +95,8 @@ public:
 
 //     ByteBuffer to_byte_buffer() const;
 
-// private:
-//     RetainPtr<StringImpl> m_impl;
+private:
+    RetainPtr<StringImpl> m_impl;
 // };
 
 // template<>
