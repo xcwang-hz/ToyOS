@@ -48,6 +48,7 @@ set(KERNEL_COMMON_SOURCES
     Kernel/Process.cpp
     Kernel/Scheduler.cpp
     Kernel/StdLib.cpp
+    Kernel/Syscall.cpp
     Kernel/entry.cpp
     Kernel/kmalloc.cpp
     Kernel/kprintf.cpp
@@ -59,6 +60,24 @@ set(KERNEL_COMMON_SOURCES
     Kernel/SharedGraphics/Rect.cpp
     Kernel/Terminal/Terminal.cpp
 )
+
+set(I386_KERNEL_ONLY_SOURCES
+    arch/i386/PIC.cpp
+    arch/i386/boot.S
+    arch/i386/switch.S
+    arch/i386/i386.cpp
+    arch/i386/i8253.cpp
+)
+
+set(LIBC_SOURCES
+    LibC/stdio.cpp
+)
+
+set(USERLAND_SOURCES
+    Userland/shell.cpp
+)
+
+set(ALL_USER_SOURCES ${LIBC_SOURCES} ${USERLAND_SOURCES})
 
 # Output directories (matches build/i386 and build/wasm)
 set(DIST_I386 ${CMAKE_BINARY_DIR}/i386)
@@ -74,12 +93,9 @@ set(I386_INCLUDES
 )
 
 set(I386_SOURCES
-    arch/i386/PIC.cpp
-    arch/i386/boot.S
-    arch/i386/switch.S
-    arch/i386/i386.cpp
-    arch/i386/i8253.cpp
+    ${I386_KERNEL_ONLY_SOURCES}
     ${KERNEL_COMMON_SOURCES}
+    ${ALL_USER_SOURCES}
 )
 
 add_executable(toyos_i386 ${I386_SOURCES})
@@ -103,7 +119,11 @@ target_compile_options(toyos_i386 PRIVATE
     -ffreestanding -Wall -Wextra -std=c++20
     -fno-exceptions -fno-rtti -fno-threadsafe-statics
     -nostdinc -fno-pie
-    -DI386 -DSERENITY -DKERNEL
+    -DI386 -DSERENITY
+)
+
+set_source_files_properties(${KERNEL_COMMON_SOURCES} ${I386_KERNEL_ONLY_SOURCES}
+    PROPERTIES COMPILE_DEFINITIONS "KERNEL"
 )
 
 # 5. Link Options (Matches LDFLAGS_I386)
@@ -160,10 +180,15 @@ add_custom_target(toyos_iso ALL DEPENDS ${ISO_IMAGE})
 # Target 2: Wasm Kernel (toyos.wasm)
 # ------------------------------------------------------------------------------
 
-# 1. Define Sources
-set(WASM_SOURCES 
+set(WASM_KERNEL_ONLY_SOURCES 
     arch/wasm/wasm_entry.cpp
-    ${KERNEL_COMMON_SOURCES})
+)
+
+set(WASM_SOURCES
+    ${WASM_KERNEL_ONLY_SOURCES}
+    ${KERNEL_COMMON_SOURCES}
+    ${ALL_USER_SOURCES}
+)
 
 # 2. Create Executable Target
 add_executable(toyos_wasm ${WASM_SOURCES})
@@ -183,7 +208,11 @@ target_compile_options(toyos_wasm PRIVATE
     -ffreestanding -Wall -Wextra -std=c++20
     -fno-exceptions -fno-rtti 
     -nostdinc
-    -DWASM -DSERENITY -DKERNEL
+    -DWASM -DSERENITY
+)
+
+set_source_files_properties(${KERNEL_COMMON_SOURCES} ${WASM_KERNEL_ONLY_SOURCES}
+    PROPERTIES COMPILE_DEFINITIONS "KERNEL"
 )
 
 # 5. Link Options (Matches LDFLAGS_WASM)

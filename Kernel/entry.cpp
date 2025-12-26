@@ -51,6 +51,7 @@ struct multiboot_info_t {
 };
 
 
+extern void shell_main();
 Terminal* terminal1 = nullptr;
 Terminal* terminal2 = nullptr;
 system_t system;
@@ -117,8 +118,8 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         terminal1->create_window(size, fb_ptr);
         terminal2->create_window(size, fb_ptr);
 
-        Process::create_kernel_process("Terminal1", task1_entry);
-        Process::create_kernel_process("Terminal2", task2_entry);
+        Process::create_kernel_process("Shell", shell_main);
+        Process::create_kernel_process("Background", task2_entry);
 
         terminal1->paint();
         terminal2->paint();
