@@ -1,9 +1,9 @@
 #pragma once
 
 #include <sys/cdefs.h>
-// #include <sys/types.h>
+#include <sys/types.h>
 // #include <stdarg.h>
-// #include <limits.h>
+#include <limits.h>
 
 __BEGIN_DECLS
 //  #ifndef EOF
@@ -18,26 +18,26 @@ __BEGIN_DECLS
 // #define _IOLBF 1
 // #define _IONBF 2
 
-// struct __STDIO_FILE {
-//     int fd;
-//     int eof;
-//     int error;
-//     int mode;
-//     char* buffer;
-//     size_t buffer_size;
-//     size_t buffer_index;
-//     char default_buffer[BUFSIZ];
-// };
+struct __STDIO_FILE {
+    int fd;
+    int eof;
+    int error;
+    int mode;
+    char* buffer;
+    size_t buffer_size;
+    size_t buffer_index;
+    char default_buffer[BUFSIZ];
+};
 
-// typedef struct __STDIO_FILE FILE;
+typedef struct __STDIO_FILE FILE;
 
-// extern FILE* stdin;
+extern FILE* stdin;
 // extern FILE* stdout;
 // extern FILE* stderr;
 
-// char* fgets(char* buffer, int size, FILE*);
+char* fgets(char* buffer, int size, FILE*);
 // int fileno(FILE*);
-// int fgetc(FILE*);
+int fgetc(FILE*);
 // int getc(FILE*);
 // int getchar();
 // FILE* fdopen(int fd, const char* mode);
@@ -46,9 +46,9 @@ __BEGIN_DECLS
 // void rewind(FILE*);
 // void clearerr(FILE*);
 // int ferror(FILE*);
-// int feof(FILE*);
+int feof(FILE*);
 // int fflush(FILE*);
-// size_t fread(void* ptr, size_t size, size_t nmemb, FILE*);
+size_t fread(void* ptr, size_t size, size_t nmemb, FILE*);
 // size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE*);
 // int vfprintf(FILE*, const char* fmt, va_list);
 // int vsprintf(char* buffer, const char* fmt, va_list);

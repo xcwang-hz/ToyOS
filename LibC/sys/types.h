@@ -18,7 +18,7 @@ __BEGIN_DECLS
 // typedef int pid_t;
 
 typedef __SIZE_TYPE__ size_t;
-// typedef int32_t ssize_t;
+typedef int32_t ssize_t;
 
 // typedef uint32_t ino_t;
 // typedef int32_t off_t;

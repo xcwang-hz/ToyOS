@@ -3,9 +3,9 @@
 // #include "ByteBuffer.h"
 #include "RetainPtr.h"
 #include "StringImpl.h"
-// #include "Traits.h"
+#include "Traits.h"
 #include "Vector.h"
-// #include "kstdio.h"
+#include "kstdio.h"
 
 namespace AK {
 
@@ -34,15 +34,15 @@ public:
     {
     }
 
-//     String(const StringImpl& impl)
-//         : m_impl(const_cast<StringImpl&>(impl))
-//     {
-//     }
+    String(const StringImpl& impl)
+        : m_impl(const_cast<StringImpl&>(impl))
+    {
+    }
 
-//     String(RetainPtr<StringImpl>&& impl)
-//         : m_impl(move(impl))
-//     {
-//     }
+    String(RetainPtr<StringImpl>&& impl)
+        : m_impl(move(impl))
+    {
+    }
 
 //     unsigned toUInt(bool& ok) const;
 
@@ -61,20 +61,20 @@ public:
 //     }
 
     Vector<String> split(char separator) const;
-//     String substring(size_t start, size_t length) const;
+    String substring(size_t start, size_t length) const;
 
 //     bool is_null() const { return !m_impl; }
-//     bool is_empty() const { return length() == 0; }
-//     size_t length() const { return m_impl ? m_impl->length() : 0; }
-//     const char* characters() const { return m_impl ? m_impl->characters() : nullptr; }
-//     char operator[](size_t i) const { ASSERT(m_impl); return (*m_impl)[i]; }
+    bool is_empty() const { return length() == 0; }
+    size_t length() const { return m_impl ? m_impl->length() : 0; }
+    const char* characters() const { return m_impl ? m_impl->characters() : nullptr; }
+    char operator[](size_t i) const { /*ASSERT(m_impl);*/ return (*m_impl)[i]; }
 
 //     bool operator==(const String&) const;
 //     bool operator!=(const String& other) const { return !(*this == other); }
 
 //     String isolated_copy() const;
 
-//     static String empty();
+    static String empty();
 
 //     StringImpl* impl() { return m_impl.ptr(); }
 //     const StringImpl* impl() const { return m_impl.ptr(); }

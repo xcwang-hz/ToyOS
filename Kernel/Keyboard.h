@@ -2,7 +2,7 @@
 
 #include <AK/Types.h>
 // #include <AK/DoublyLinkedList.h>
-// #include <AK/CircularQueue.h>
+#include <AK/CircularQueue.h>
 // #include <Kernel/CharacterDevice.h>
 #include "IRQHandler.h"
 #include "KeyCode.h"
@@ -39,6 +39,7 @@ public:
     void set_client(KeyboardClient* client) { m_client = client; }
 
     // // ^CharacterDevice
+    byte read_char();
     // virtual ssize_t read(Process&, byte* buffer, size_t) override;
     // virtual bool can_read(Process&) const override;
     // virtual ssize_t write(Process&, const byte* buffer, size_t) override;
@@ -61,7 +62,7 @@ private:
     }
 
     KeyboardClient* m_client { nullptr };
-    // CircularQueue<Event, 16> m_queue;
+    CircularQueue<Event, 16> m_queue;
     byte m_modifiers { 0 };
 };
 

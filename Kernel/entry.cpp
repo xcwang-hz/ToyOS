@@ -119,10 +119,10 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         terminal2->create_window(size, fb_ptr);
 
         Process::create_kernel_process("Shell", shell_main);
-        Process::create_kernel_process("Background", task2_entry);
+        // Process::create_kernel_process("Background", task2_entry);
 
         terminal1->paint();
-        terminal2->paint();
+        // terminal2->paint();
         initialized = true;
 
 #ifdef WASM

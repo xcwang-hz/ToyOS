@@ -17,10 +17,10 @@ namespace AK {
 //     return !memcmp(characters(), other.characters(), length());
 // }
 
-// String String::empty()
-// {
-//     return StringImpl::the_empty_stringimpl();
-// }
+String String::empty()
+{
+    return StringImpl::the_empty_stringimpl();
+}
 
 // String String::isolated_copy() const
 // {
@@ -34,39 +34,39 @@ namespace AK {
 //     return String(move(*impl));
 // }
 
-// String String::substring(size_t start, size_t length) const
-// {
-//     ASSERT(m_impl);
-//     ASSERT(start + length <= m_impl->length());
-//     // FIXME: This needs some input bounds checking.
-//     char* buffer;
-//     auto newImpl = StringImpl::create_uninitialized(length, buffer);
-//     memcpy(buffer, characters() + start, length);
-//     buffer[length] = '\0';
-//     return newImpl;
-// }
+String String::substring(size_t start, size_t length) const
+{
+    // ASSERT(m_impl);
+    // ASSERT(start + length <= m_impl->length());
+    // FIXME: This needs some input bounds checking.
+    char* buffer;
+    auto newImpl = StringImpl::create_uninitialized(length, buffer);
+    memcpy(buffer, characters() + start, length);
+    buffer[length] = '\0';
+    return newImpl;
+}
 
 Vector<String> String::split(const char separator) const
 {
-    // if (is_empty())
-    //     return { };
+    if (is_empty())
+        return { };
 
     Vector<String> v;
-    // size_t substart = 0;
-    // for (size_t i = 0; i < length(); ++i) {
-    //     char ch = characters()[i];
-    //     if (ch == separator) {
-    //         size_t sublen = i - substart;
-    //         if (sublen != 0)
-    //             v.append(substring(substart, sublen));
-    //         substart = i + 1;
-    //     }
-    // }
-    // size_t taillen = length() - substart;
-    // if (taillen != 0)
-    //     v.append(substring(substart, taillen));
-    // if (characters()[length() - 1] == separator)
-    //     v.append(empty());
+    size_t substart = 0;
+    for (size_t i = 0; i < length(); ++i) {
+        char ch = characters()[i];
+        if (ch == separator) {
+            size_t sublen = i - substart;
+            if (sublen != 0)
+                v.append(substring(substart, sublen));
+            substart = i + 1;
+        }
+    }
+    size_t taillen = length() - substart;
+    if (taillen != 0)
+        v.append(substring(substart, taillen));
+    if (characters()[length() - 1] == separator)
+        v.append(empty());
     return v;
 }
 

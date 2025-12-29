@@ -73,6 +73,8 @@ set(I386_KERNEL_ONLY_SOURCES
 
 set(LIBC_SOURCES
     LibC/stdio.cpp
+    LibC/string.cpp
+    LibC/unistd.cpp
 )
 
 set(USERLAND_SOURCES

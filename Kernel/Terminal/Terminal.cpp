@@ -4,6 +4,7 @@
 #include <SharedGraphics/Painter.h>
 #include <Kernel/Keyboard.h>
 #include "kprintf.h"
+#include <AK/Assertions.h>
 // #include <AK/StdLibExtras.h>
 // #include <LibC/stdlib.h>
 // #include <LibC/unistd.h>
@@ -75,11 +76,11 @@ Terminal::Line::Line(word columns)
     memset(characters, ' ', length);
 }
 
-// Terminal::Line::~Line()
-// {
-//     delete [] characters;
-//     delete [] attributes;
-// }
+Terminal::Line::~Line()
+{
+    delete [] characters;
+    delete [] attributes;
+}
 
 void Terminal::Line::clear()
 {
@@ -119,20 +120,20 @@ inline bool is_valid_final_character(byte ch)
     return ch >= 0x40 && ch <= 0x7e;
 }
 
-// unsigned parseUInt(const String& str, bool& ok)
-// {
-//     unsigned value = 0;
-//     for (size_t i = 0; i < str.length(); ++i) {
-//         if (str[i] < '0' || str[i] > '9') {
-//             ok = false;
-//             return 0;
-//         }
-//         value = value * 10;
-//         value += str[i] - '0';
-//     }
-//     ok = true;
-//     return value;
-// }
+unsigned parseUInt(const String& str, bool& ok)
+{
+    unsigned value = 0;
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (str[i] < '0' || str[i] > '9') {
+            ok = false;
+            return 0;
+        }
+        value = value * 10;
+        value += str[i] - '0';
+    }
+    ok = true;
+    return value;
+}
 
 // enum ANSIColor : byte {
 //     Black = 0,
@@ -312,32 +313,32 @@ void Terminal::escape$A(const Vector<unsigned>& params)
 //     }
 // }
 
-// void Terminal::escape$J(const Vector<unsigned>& params)
-// {
-//     int mode = 0;
-//     if (params.size() >= 1)
-//         mode = params[0];
-//     switch (mode) {
-//     case 0:
-//         // FIXME: Clear from cursor to end of screen.
-//         notImplemented();
-//         break;
-//     case 1:
-//         // FIXME: Clear from cursor to beginning of screen.
-//         notImplemented();
-//         break;
-//     case 2:
-//         clear();
-//         break;
-//     case 3:
-//         // FIXME: <esc>[3J should also clear the scrollback buffer.
-//         clear();
-//         break;
-//     default:
-//         notImplemented();
-//         break;
-//     }
-// }
+void Terminal::escape$J(const Vector<unsigned>& params)
+{
+    int mode = 0;
+    if (params.size() >= 1)
+        mode = params[0];
+    switch (mode) {
+    case 0:
+        // FIXME: Clear from cursor to end of screen.
+        notImplemented();
+        break;
+    case 1:
+        // FIXME: Clear from cursor to beginning of screen.
+        notImplemented();
+        break;
+    case 2:
+        clear();
+        break;
+    case 3:
+        // FIXME: <esc>[3J should also clear the scrollback buffer.
+        clear();
+        break;
+    default:
+        notImplemented();
+        break;
+    }
+}
 
 // void Terminal::execute_xterm_command()
 // {
@@ -363,12 +364,12 @@ void Terminal::execute_escape_sequence(byte final)
     Vector<unsigned> params;
     for (auto& parampart : paramparts) {
         bool ok;
-        // unsigned value = parseUInt(parampart, ok);
-        // if (!ok) {
-        //     // FIXME: Should we do something else?
-        //     return;
-        // }
-        // params.append(value);
+        unsigned value = parseUInt(parampart, ok);
+        if (!ok) {
+            // FIXME: Should we do something else?
+            return;
+        }
+        params.append(value);
     }
     switch (final) {
     case 'A': escape$A(params); break;
@@ -376,7 +377,7 @@ void Terminal::execute_escape_sequence(byte final)
     // case 'C': escape$C(params); break;
     // case 'D': escape$D(params); break;
     // case 'H': escape$H(params); break;
-    // case 'J': escape$J(params); break;
+    case 'J': escape$J(params); break;
     // case 'K': escape$K(params); break;
     // case 'm': escape$m(params); break;
     // case 's': escape$s(params); break;
@@ -390,22 +391,22 @@ void Terminal::execute_escape_sequence(byte final)
     m_intermediates.clear();
 }
 
-// void Terminal::scroll_up()
-// {
-//     word new_row = m_cursor_row;
-//     if (m_cursor_row == (rows() - 1)) {
-//         // NOTE: We have to invalidate the cursor first.
-//         invalidate_cursor();
-//         delete m_lines[0];
-//         for (word row = 1; row < rows(); ++row)
-//             m_lines[row - 1] = m_lines[row];
-//         m_lines[m_rows - 1] = new Line(m_columns);
-//         ++m_rows_to_scroll_backing_store;
-//     } else {
-//         ++new_row;
-//     }
-//     set_cursor(new_row, 0);
-// }
+void Terminal::scroll_up()
+{
+    word new_row = m_cursor_row;
+    if (m_cursor_row == (rows() - 1)) {
+        // NOTE: We have to invalidate the cursor first.
+        invalidate_cursor();
+        delete m_lines[0];
+        for (word row = 1; row < rows(); ++row)
+            m_lines[row - 1] = m_lines[row];
+        m_lines[m_rows - 1] = new Line(m_columns);
+        // ++m_rows_to_scroll_backing_store;
+    } else {
+        ++new_row;
+    }
+    set_cursor(new_row, 0);
+}
 
 void Terminal::set_cursor(unsigned row, unsigned column)
 {
@@ -442,7 +443,7 @@ void Terminal::on_char(byte ch)
 //             m_escape_state = ExpectXtermParameter1;
 //         else
 //             m_escape_state = Normal;
-//         return;
+        return;
 //     case ExpectXtermParameter1:
 //         if (ch != ';') {
 //             m_xterm_param1.append(ch);
@@ -517,9 +518,9 @@ void Terminal::on_char(byte ch)
 //     case '\r':
 //         set_cursor(m_cursor_row, 0);
 //         return;
-//     case '\n':
-//         scroll_up();
-//         return;
+    case '\n':
+        scroll_up();
+        return;
     }
 
     auto new_column = m_cursor_column + 1;

@@ -26,7 +26,7 @@ private:
     virtual void on_key_pressed(Keyboard::Event) override;
     
     Font& font() { return *m_font; }
-//     void scroll_up();
+    void scroll_up();
     void set_cursor(unsigned row, unsigned column);
     void put_character_at(unsigned row, unsigned column, byte ch);
     void invalidate_cursor();
@@ -39,7 +39,7 @@ private:
 //     void escape$C(const Vector<unsigned>&);
 //     void escape$D(const Vector<unsigned>&);
 //     void escape$H(const Vector<unsigned>&);
-//     void escape$J(const Vector<unsigned>&);
+    void escape$J(const Vector<unsigned>&);
 //     void escape$K(const Vector<unsigned>&);
 //     void escape$m(const Vector<unsigned>&);
 //     void escape$s(const Vector<unsigned>&);

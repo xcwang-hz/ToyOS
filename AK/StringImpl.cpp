@@ -85,7 +85,7 @@ RetainPtr<StringImpl> StringImpl::create(const char* cstring, size_t length, Sho
     auto newStringImpl = create_uninitialized(length, buffer);
     if (!newStringImpl)
         return nullptr;
-    // memcpy(buffer, cstring, length * sizeof(char));
+    memcpy(buffer, cstring, length * sizeof(char));
 
     if (shouldChomp && buffer[length - 1] == '\n') {
         buffer[length - 1] = '\0';

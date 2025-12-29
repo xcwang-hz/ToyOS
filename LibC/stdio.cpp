@@ -6,7 +6,7 @@
 // #include <unistd.h>
 // #include <assert.h>
 // #include <stdlib.h>
-// #include <unistd.h>
+#include <unistd.h>
 // #include <fcntl.h>
 #include <AK/printf.cpp>
 #include <Kernel/Syscall.h>
@@ -14,7 +14,7 @@
 extern "C" {
 
 // static FILE __default_streams[3];
-// FILE* stdin;
+FILE* stdin;
 // FILE* stdout;
 // FILE* stderr;
 
@@ -78,11 +78,11 @@ extern "C" {
 //     return stream->fd;
 // }
 
-// int feof(FILE* stream)
-// {
-//     assert(stream);
-//     return stream->eof;
-// }
+int feof(FILE* stream)
+{
+    // assert(stream);
+    return stream->eof;
+}
 
 // int fflush(FILE* stream)
 // {
@@ -96,32 +96,32 @@ extern "C" {
 //     return rc;
 // }
 
-// char* fgets(char* buffer, int size, FILE* stream)
-// {
-//     assert(stream);
-//     ssize_t nread = 0;
-//     for (;;) {
-//         if (nread >= size)
-//             break;
-//         char ch = fgetc(stream);
-//         if (feof(stream))
-//             break;
-//         buffer[nread++] = ch;
-//         if (!ch || ch == '\n')
-//             break;
-//     }
-//     if (nread < size)
-//         buffer[nread] = '\0';
-//     return buffer;
-// }
+char* fgets(char* buffer, int size, FILE* stream)
+{
+    // assert(stream);
+    ssize_t nread = 0;
+    for (;;) {
+        if (nread >= size)
+            break;
+        char ch = fgetc(stream);
+        if (feof(stream))
+            break;
+        buffer[nread++] = ch;
+        if (!ch || ch == '\n')
+            break;
+    }
+    if (nread < size)
+        buffer[nread] = '\0';
+    return buffer;
+}
 
-// int fgetc(FILE* stream)
-// {
-//     assert(stream);
-//     char ch;
-//     fread(&ch, sizeof(char), 1, stream);
-//     return ch;
-// }
+int fgetc(FILE* stream)
+{
+    // assert(stream);
+    char ch;
+    fread(&ch, sizeof(char), 1, stream);
+    return ch;
+}
 
 // int getc(FILE* stream)
 // {
@@ -189,16 +189,16 @@ int putchar(int ch)
 //     return stream->error;
 // }
 
-// size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream)
-// {
-//     assert(stream);
-//     ssize_t nread = read(stream->fd, ptr, nmemb * size);
-//     if (nread < 0)
-//         return 0;
-//     if (nread == 0)
-//         stream->eof = true;
-//     return nread;
-// }
+size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream)
+{
+    // assert(stream);
+    ssize_t nread = read(stream->fd, ptr, nmemb * size);
+    if (nread < 0)
+        return 0;
+    if (nread == 0)
+        stream->eof = true;
+    return nread;
+}
 
 // size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream)
 // {

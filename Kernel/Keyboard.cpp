@@ -1,3 +1,4 @@
+#include "Scheduler.h"
 #include "types.h"
 #if I386
 #include "i386.h"
@@ -84,7 +85,7 @@ void Keyboard::key_state_changed(byte raw, bool pressed)
         event.flags |= Is_Press;
     if (m_client)
         m_client->on_key_pressed(event);
-    // m_queue.enqueue(event);
+    m_queue.enqueue(event);
 }
 
 void Keyboard::handle_scancode(byte scancode)
@@ -167,6 +168,14 @@ Keyboard::~Keyboard()
 // {
 //     return !m_queue.is_empty();
 // }
+
+byte Keyboard::read_char() {
+    while (m_queue.is_empty())
+        Scheduler::yield();
+    
+    Event event = m_queue.dequeue();
+    return event.character;
+}
 
 // ssize_t Keyboard::read(Process&, byte* buffer, size_t size)
 // {

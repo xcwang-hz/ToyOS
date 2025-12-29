@@ -5,29 +5,31 @@
 
 extern "C" {
 
-// void memcpy(void *dest_ptr, const void *src_ptr, dword n)
-// {
-//     dword dest = (dword)dest_ptr;
-//     dword src = (dword)src_ptr;
-//     // FIXME: Support starting at an unaligned address.
-//     if (!(dest & 0x3) && !(src & 0x3) && n >= 12) {
-//         size_t dwords = n / sizeof(dword);
-//         asm volatile(
-//             "rep movsl\n"
-//             : "=S"(src), "=D"(dest)
-//             : "S"(src), "D"(dest), "c"(dwords)
-//             : "memory"
-//         );
-//         n -= dwords * sizeof(dword);
-//         if (n == 0)
-//             return;
-//     }
-//     asm volatile(
-//         "rep movsb\n"
-//         :: "S"(src), "D"(dest), "c"(n)
-//         : "memory"
-//     );
-// }
+void memcpy(void *dest_ptr, const void *src_ptr, dword n)
+{
+    dword dest = (dword)dest_ptr;
+    dword src = (dword)src_ptr;
+#ifdef I386    
+    // FIXME: Support starting at an unaligned address.
+    if (!(dest & 0x3) && !(src & 0x3) && n >= 12) {
+        size_t dwords = n / sizeof(dword);
+        asm volatile(
+            "rep movsl\n"
+            : "=S"(src), "=D"(dest)
+            : "S"(src), "D"(dest), "c"(dwords)
+            : "memory"
+        );
+        n -= dwords * sizeof(dword);
+        if (n == 0)
+            return;
+    }
+    asm volatile(
+        "rep movsb\n"
+        :: "S"(src), "D"(dest), "c"(n)
+        : "memory"
+    );
+#endif    
+}
 
 // void strcpy(char* dest, const char *src)
 // {
