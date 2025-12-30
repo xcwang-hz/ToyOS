@@ -50,12 +50,19 @@ struct multiboot_info_t {
     uint8_t  framebuffer_type;
 };
 
-
+extern "C" volatile int32_t js_pending_key = 0;
 extern void shell_main();
 Terminal* terminal1 = nullptr;
 Terminal* terminal2 = nullptr;
 system_t system;
 bool initialized = false;
+void check_js_key() {
+    if (js_pending_key != 0) {
+        int key = js_pending_key;
+        js_pending_key = 0;
+        Keyboard::the().handle_scancode((byte)key);
+    }
+}
 
 void task1_entry() {
     while (true) {
@@ -119,7 +126,7 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         terminal2->create_window(size, fb_ptr);
 
         Process::create_kernel_process("Shell", shell_main);
-        // Process::create_kernel_process("Background", task2_entry);
+        Process::create_kernel_process("Background", task2_entry);
 
         terminal1->paint();
         // terminal2->paint();
@@ -138,6 +145,7 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
     if (!current)
         return;
 
+    check_js_key();    
     if (current->m_is_first_time) {
         current->m_is_first_time = false;
         if (current->m_entry) {

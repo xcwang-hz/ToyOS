@@ -185,7 +185,6 @@ add_custom_target(toyos_iso ALL DEPENDS ${ISO_IMAGE})
 # ------------------------------------------------------------------------------
 
 set(WASM_KERNEL_ONLY_SOURCES 
-    arch/wasm/wasm_entry.cpp
 )
 
 set(WASM_SOURCES
@@ -224,7 +223,7 @@ target_link_options(toyos_wasm PRIVATE
     --target=wasm32 -nostdlib
     -Wl,--no-entry
     -Wl,--export=kernel_entry
-    -Wl,--export=wasm_send_key
+    -Wl,--export=js_pending_key
     -Wl,--allow-undefined
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!
     -Wl,--import-memory

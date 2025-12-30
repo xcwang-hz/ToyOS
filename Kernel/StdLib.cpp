@@ -28,6 +28,34 @@ void memcpy(void *dest_ptr, const void *src_ptr, dword n)
         :: "S"(src), "D"(dest), "c"(n)
         : "memory"
     );
+#else
+// Cast to byte pointers for arithmetic
+    byte* d = (byte*)dest_ptr;
+    const byte* s = (const byte*)src_ptr;
+
+    // Optimization: If aligned to 4 bytes and size is sufficient, copy by chunks of 4 (dword)
+    // This mimics the "rep movsl" logic in C++
+    if (n >= 4 && ((dword)d & 3) == 0 && ((dword)s & 3) == 0) {
+        size_t dwords = n / 4;
+        
+        // Treat as dword pointers
+        dword* d32 = (dword*)d;
+        const dword* s32 = (const dword*)s;
+
+        while (dwords--) {
+            *d32++ = *s32++;
+        }
+
+        // Update pointers and remaining count
+        d = (byte*)d32;
+        s = (const byte*)s32;
+        n %= 4; 
+    }
+
+    // Copy remaining bytes (mimics "rep movsb")
+    while (n--) {
+        *d++ = *s++;
+    }    
 #endif    
 }
 

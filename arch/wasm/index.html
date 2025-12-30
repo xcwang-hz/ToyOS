@@ -75,8 +75,9 @@
             codeToSend |= 0x80;
 
           // Call the exported C++ function
-          if (kernelInstance.exports.wasm_send_key)
-            kernelInstance.exports.wasm_send_key(codeToSend);
+          const pendingKeyAddr = kernelInstance.exports.js_pending_key.value; 
+          const mem32 = new Int32Array(wasmMemory.buffer);
+          mem32[pendingKeyAddr / 4] = codeToSend;
         } else {
           console.warn(`ToyOS_JS: Unmapped key: ${e.code}`);
         }

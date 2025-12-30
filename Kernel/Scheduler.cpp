@@ -2,6 +2,7 @@
 #include "Process.h"
 #include "kprintf.h"
 #include "system.h"
+#include "entry.h"
 
 #define LOG_EVERY_CONTEXT_SWITCH
 //#define SCHEDULER_DEBUG
@@ -253,6 +254,7 @@ bool Scheduler::context_switch(Process& process)
     // 3. When this function returns, it means we have successfully 
     //    rewound (restored) the stack for the 'prev' process (which is now current).
     wasm_async_yield(&prev_process->m_asyncify_ctx, &process.m_asyncify_ctx);
+    check_js_key();
 #else    
     context_switch_asm(&prev_process->m_kernel_stack_top, process.m_kernel_stack_top);
 #endif

@@ -57,8 +57,8 @@ private:
         Attribute() { reset(); }
         void reset()
         {
-            foreground_color = 1;
-            background_color = 4;
+            foreground_color = 7;
+            background_color = 0;
             //bold = false;
         }
         unsigned foreground_color : 4;
