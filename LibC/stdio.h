@@ -35,7 +35,7 @@ extern FILE* stdin;
 // extern FILE* stdout;
 // extern FILE* stderr;
 
-char* fgets(char* buffer, int size, FILE*);
+void fgets(char* buffer, int size, FILE*);
 // int fileno(FILE*);
 int fgetc(FILE*);
 // int getc(FILE*);

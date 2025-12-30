@@ -344,7 +344,7 @@ void Scheduler::timer_tick()
         return;
 
 //     system.uptime++;
-    dbgprintf("Scheduler::timer_tick\n");
+    // dbgprintf("Scheduler::timer_tick\n");
     if (current->tick())
         return;
 

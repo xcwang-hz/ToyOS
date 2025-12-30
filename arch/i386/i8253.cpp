@@ -61,6 +61,7 @@ asm(
 void clock_handle(RegisterDump& regs)
 {
     // IRQHandlerScope scope(IRQ_TIMER);
+    PIC::eoi(IRQ_TIMER);
     Scheduler::timer_tick(regs);
 }
 

@@ -85,7 +85,8 @@ void Keyboard::key_state_changed(byte raw, bool pressed)
         event.flags |= Is_Press;
     if (m_client)
         m_client->on_key_pressed(event);
-    m_queue.enqueue(event);
+    if (pressed)
+        m_queue.enqueue(event);
 }
 
 void Keyboard::handle_scancode(byte scancode)

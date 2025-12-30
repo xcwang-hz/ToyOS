@@ -45,7 +45,7 @@ inline dword invoke(Function function, T1 arg1, T2 arg2, T3 arg3)
     dword result;
     // asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2),"b"((dword)arg3):"memory");
     if (function == Function::SC_read) {
-        return Keyboard::the().read_char();
+        result = Keyboard::the().read_char();
     }
 
     return result;

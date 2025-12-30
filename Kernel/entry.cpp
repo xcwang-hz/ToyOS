@@ -113,8 +113,8 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
 
         Process::initialize();
 
-        terminal1 = new Terminal({0,0});
         terminal2 = new Terminal({w/2,h/2});
+        terminal1 = new Terminal({0,0});
         terminal1->create_window(size, fb_ptr);
         terminal2->create_window(size, fb_ptr);
 

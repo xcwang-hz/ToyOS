@@ -96,30 +96,33 @@ int feof(FILE* stream)
 //     return rc;
 // }
 
-char* fgets(char* buffer, int size, FILE* stream)
+void fgets(char* buffer, int size, FILE* stream)
 {
     // assert(stream);
     ssize_t nread = 0;
     for (;;) {
         if (nread >= size)
             break;
-        char ch = fgetc(stream);
-        if (feof(stream))
-            break;
-        buffer[nread++] = ch;
-        if (!ch || ch == '\n')
-            break;
+        char ch = (char)fgetc(stream);
+        if (ch == '\n') {
+            buffer[nread] = '\0';
+            return;
+        }
+        else if (ch == '\b') {
+            if (nread > 0) {
+                nread--;                
+            }
+        }
+        else if (nread < size - 1)
+            buffer[nread++] = ch;
     }
-    if (nread < size)
-        buffer[nread] = '\0';
-    return buffer;
 }
 
 int fgetc(FILE* stream)
 {
     // assert(stream);
     char ch;
-    fread(&ch, sizeof(char), 1, stream);
+    ch = fread(&ch, sizeof(char), 1, stream);
     return ch;
 }
 

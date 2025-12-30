@@ -39,12 +39,6 @@ void Terminal::create_window(const Size& size, RGBA32* data)
 
     m_backing = GraphicsBitmap::create_wrapper(size, data);
 //     dbgprintf("(Terminal:%d) window backing %ux%u @ %p\n", getpid(), info.size.width, info.size.height, info.pixels);
-    on_char('t');
-    on_char('o');
-    on_char('y');
-    on_char('o');
-    on_char('s');
-    on_char(':');
 }
 
 Terminal::Terminal(Point translation)
@@ -496,13 +490,13 @@ void Terminal::on_char(byte ch)
     case '\033':
         m_escape_state = ExpectBracket;
         return;
-//     case 8: // Backspace
-//         if (m_cursor_column) {
-//             set_cursor(m_cursor_row, m_cursor_column - 1);
-//             put_character_at(m_cursor_row, m_cursor_column, ' ');
-//             return;
-//         }
-//         return;
+    case 8: // Backspace
+        if (m_cursor_column) {
+            set_cursor(m_cursor_row, m_cursor_column - 1);
+            put_character_at(m_cursor_row, m_cursor_column, ' ');
+            return;
+        }
+        return;
 //     case '\a':
 //         // FIXME: Bell!
 //         return;

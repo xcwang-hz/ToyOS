@@ -13,11 +13,11 @@ word getISR();
 
 }
 
-// class IRQHandlerScope {
-// public:
-//     explicit IRQHandlerScope(byte irq) : m_irq(irq) { }
-//     ~IRQHandlerScope() { PIC::eoi(m_irq); }
+class IRQHandlerScope {
+public:
+    explicit IRQHandlerScope(byte irq) : m_irq(irq) { }
+    ~IRQHandlerScope() { PIC::eoi(m_irq); }
 
-// private:
-//     byte m_irq { 0 };
-// };
+private:
+    byte m_irq { 0 };
+};
