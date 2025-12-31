@@ -5,6 +5,8 @@
 #include <Process.h>
 #include "kprintf.h"
 #include "system.h"
+#include <SharedGraphics/GraphicsBitmap.h>
+#include "Painter.h"
 #ifdef I386
 #include "i386.h"
 #include "i8253.h"
@@ -128,6 +130,10 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         Process::create_kernel_process("Shell", shell_main);
         Process::create_kernel_process("Background", task2_entry);
 
+        RetainPtr<GraphicsBitmap> backing = GraphicsBitmap::create_wrapper(size, fb_ptr);
+        Rect rect { 0, 0, w, h };
+        Painter painter(*backing);
+        painter.fill_rect(rect, Color::Black);
         terminal1->paint();
         // terminal2->paint();
         initialized = true;

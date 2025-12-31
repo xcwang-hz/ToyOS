@@ -22,8 +22,8 @@
 
 /* Video Mode Preferences (Offset 32) */
 .long 0    /* Mode Type: 0 = Linear Graphics, 1 = Text */
-.long 800  /* Width */
-.long 600  /* Height */
+.long 1024  /* Width */
+.long 768  /* Height */
 .long 32   /* Depth (Bits Per Pixel) */
 
 /* Reserve a stack for the kernel */
