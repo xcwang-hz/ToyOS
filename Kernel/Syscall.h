@@ -17,12 +17,20 @@ enum Function {
 
 void initialize();
 
-// inline dword invoke(Function function)
-// {
-//     dword result;
-//     asm volatile("int $0x80":"=a"(result):"a"(function):"memory");
-//     return result;
-// }
+#ifdef WASM
+    dword handle(dword function, dword arg1, dword arg2, dword arg3);
+#endif    
+
+inline dword invoke(Function function)
+{
+    dword result;
+#ifdef I386    
+    asm volatile("int $0x80":"=a"(result):"a"(function):"memory");
+#else 
+    result = handle(function, 0, 0, 0);
+#endif
+    return result;
+}
 
 template<typename T1>
 inline dword invoke(Function function, T1 arg1)
@@ -31,10 +39,7 @@ inline dword invoke(Function function, T1 arg1)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1):"memory");
 #else    
-    // if (function == Function::SC_putch) {
-    //     terminal1->on_char(((dword)arg1 & 0xff));
-    //     terminal1->paint();
-    // }
+    result = handle(function, (dword)arg1, 0, 0);
 #endif
     return result;
 }
@@ -43,7 +48,11 @@ template<typename T1, typename T2>
 inline dword invoke(Function function, T1 arg1, T2 arg2)
 {
     dword result;
-    // asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2):"memory");
+#ifdef I386    
+    asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2):"memory");
+#else 
+    result = handle(function, (dword)arg1, (dword)arg2, 0);
+#endif
     return result;
 }
 
@@ -54,9 +63,7 @@ inline dword invoke(Function function, T1 arg1, T2 arg2, T3 arg3)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2),"b"((dword)arg3):"memory");
 #else
-    // if (function == Function::SC_read) {
-    //     result = Keyboard::the().read_char();
-    // }
+    result = handle(function, (dword)arg1, (dword)arg2, (dword)arg3);
 #endif
     return result;
 }

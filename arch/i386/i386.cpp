@@ -414,7 +414,7 @@ void register_interrupt_handler(byte index, void (*f)())
 
 void register_user_callable_interrupt_handler(byte index, void (*f)())
 {
-    s_idt[index].low = 0x00080000 | LSW((f));
+    s_idt[index].low = 0x00100000 | LSW((f));
     s_idt[index].high = ((dword)(f) & 0xffff0000) | 0xef00;
     flush_idt();
 }

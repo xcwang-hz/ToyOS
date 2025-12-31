@@ -129,6 +129,7 @@
             kernelInstance = obj.instance;
             try {
               kernelInstance.exports.kernel_entry(0, 0);
+              ctx.putImageData(sharedImgData, 0, 0);
             } catch (e) {
               console.error("Kernel Error (Init):", e);
               return;

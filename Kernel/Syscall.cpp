@@ -27,7 +27,9 @@ asm(
     "    popw %fs\n"
     "    popw %gs\n"
     "    mov %esp, %eax\n"
+    "    push %eax\n"
     "    call syscall_entry\n"
+    "    add $4, %esp\n"
     "    popw %gs\n"
     "    popw %gs\n"
     "    popw %fs\n"
@@ -48,6 +50,9 @@ namespace Syscall {
     }
 #ifdef I386
     static dword handle(RegisterDump& regs, dword function, dword arg1, dword arg2, dword arg3)
+#else
+    dword handle(dword function, dword arg1, dword arg2, dword arg3)
+#endif    
     {
         switch (function) {
         case Syscall::SC_putch:
@@ -62,7 +67,6 @@ namespace Syscall {
         }
         return 0;
     }
-#endif    
 }
 
 #ifdef I386
