@@ -7,6 +7,7 @@
 #include "system.h"
 #include <SharedGraphics/GraphicsBitmap.h>
 #include "Painter.h"
+#include "Syscall.h"
 #ifdef I386
 #include "i386.h"
 #include "i8253.h"
@@ -121,6 +122,7 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
 
         Process::initialize();
+        Syscall::initialize();
 
         terminal2 = new Terminal({w/2,h/2});
         terminal1 = new Terminal({0,0});

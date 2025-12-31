@@ -106,7 +106,7 @@ extern "C" {
 
 ssize_t read(int fd, void* buf, size_t count)
 {
-    int rc = syscall(Syscall::SC_read, fd, buf, count);
+    int rc = syscall(SC_read, fd, buf, count);
     __RETURN_WITH_ERRNO(rc, rc, -1);
 }
 

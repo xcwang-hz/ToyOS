@@ -157,7 +157,7 @@ int fgetc(FILE* stream)
 
 int putchar(int ch)
 {
-    syscall(Syscall::SC_putch, ch);
+    syscall(SC_putch, ch);
     // return putc(ch, stdout);
     return 0;
 }
