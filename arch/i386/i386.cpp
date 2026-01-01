@@ -5,7 +5,7 @@
 #include "i386.h"
 #include "StdLib.h"
 #include "TSS.h"
-// #include "Assertions.h"
+#include "Assertions.h"
 // #include "Process.h"
 // #include "MemoryManager.h"
 #include "IRQHandler.h"
@@ -416,14 +416,14 @@ static void unimp_trap()
 
 void register_irq_handler(byte irq, IRQHandler& handler)
 {
-    // ASSERT(!s_irqHandler[irq]);
+    ASSERT(!s_irqHandler[irq]);
     s_irqHandler[irq] = &handler;
     register_interrupt_handler(IRQ_VECTOR_BASE + irq, asm_irq_entry);
 }
 
 void unregister_irq_handler(byte irq, IRQHandler& handler)
 {
-    // ASSERT(s_irqHandler[irq] == &handler);
+    ASSERT(s_irqHandler[irq] == &handler);
     s_irqHandler[irq] = nullptr;
 }
 
@@ -524,10 +524,10 @@ void handle_irq()
     PIC::eoi(irq);
 }
 
-// void __assertion_failed(const char* msg, const char* file, unsigned line, const char* func)
-// {
-//     asm volatile("cli");
-//     kprintf("ASSERTION FAILED: %s\n%s:%u in %s\n", msg, file, line, func);
-//     asm volatile("hlt");
-//     for (;;);
-// }
+void __assertion_failed(const char* msg, const char* file, unsigned line, const char* func)
+{
+    asm volatile("cli");
+    kprintf("ASSERTION FAILED: %s\n%s:%u in %s\n", msg, file, line, func);
+    asm volatile("hlt");
+    for (;;);
+}

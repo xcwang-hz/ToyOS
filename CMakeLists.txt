@@ -184,7 +184,8 @@ add_custom_target(toyos_iso ALL DEPENDS ${ISO_IMAGE})
 # Target 2: Wasm Kernel (toyos.wasm)
 # ------------------------------------------------------------------------------
 
-set(WASM_KERNEL_ONLY_SOURCES 
+set(WASM_KERNEL_ONLY_SOURCES
+    arch/wasm/wasm_entry.cpp
 )
 
 set(WASM_SOURCES

@@ -23,7 +23,7 @@ public:
 
     size_t length() const { return m_length; }
     const char* characters() const { return m_characters; }
-    char operator[](size_t i) const { /*ASSERT(i < m_length);*/ return m_characters[i]; }
+    char operator[](size_t i) const { ASSERT(i < m_length); return m_characters[i]; }
 
     unsigned hash() const
     {

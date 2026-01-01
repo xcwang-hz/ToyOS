@@ -118,7 +118,6 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         PIC::initialize();
         gdt_init();
         idt_init();
-        keyboard = new Keyboard;
         PIT::initialize();
 #else
         (void)magic;
@@ -136,6 +135,7 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
 
         dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
 
+        keyboard = new Keyboard;
         Process::initialize();
         Syscall::initialize();
 

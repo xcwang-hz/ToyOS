@@ -174,7 +174,7 @@ bool Scheduler::pick_next()
 bool Scheduler::yield()
 {
 //     InterruptDisabler disabler;
-//     ASSERT(!s_in_yield);
+    ASSERT(!s_in_yield);
     s_in_yield = true;
 
 //     if (!current) {

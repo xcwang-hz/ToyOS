@@ -1,14 +1,14 @@
 #pragma once
 
-// #ifdef KERNEL
-// #include <Kernel/kassert.h>
-// #else
-// #include <LibC/assert.h>
-// #endif
+#ifdef KERNEL
+#include <Kernel/kassert.h>
+#else
+#include <LibC/assert.h>
+#endif
 
 namespace AK {
 
-inline void notImplemented() { /*ASSERT(false);*/ }
+inline void notImplemented() { ASSERT(false); }
 
 }
 

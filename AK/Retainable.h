@@ -1,6 +1,6 @@
 #pragma once
 
-// #include "Assertions.h"
+#include "Assertions.h"
 #include "StdLibExtras.h"
 
 namespace AK {
@@ -34,13 +34,13 @@ class Retainable {
 public:
     void retain()
     {
-        // ASSERT(m_retain_count);
+        ASSERT(m_retain_count);
         ++m_retain_count;
     }
 
     void release()
     {
-        // ASSERT(m_retain_count);
+        ASSERT(m_retain_count);
         --m_retain_count;
         if (m_retain_count == 0) {
             call_will_be_destroyed_if_present(static_cast<T*>(this));
@@ -59,7 +59,7 @@ protected:
     Retainable() { }
     ~Retainable()
     {
-        // ASSERT(!m_retain_count);
+        ASSERT(!m_retain_count);
     }
 
 private:

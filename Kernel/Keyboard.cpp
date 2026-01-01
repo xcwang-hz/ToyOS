@@ -9,7 +9,7 @@
 #include "Keyboard.h"
 #include <Kernel/entry.h>
 // #include "VirtualConsole.h"
-// #include <AK/Assertions.h>
+#include <AK/Assertions.h>
 
 // #define KEYBOARD_DEBUG
 
@@ -140,7 +140,7 @@ static Keyboard* s_the;
 
 Keyboard& Keyboard::the()
 {
-    // ASSERT(s_the);
+    ASSERT(s_the);
     return *s_the;
 }
 

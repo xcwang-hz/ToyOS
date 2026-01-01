@@ -77,7 +77,7 @@ private:
         bool dirty { false };
         word length { 0 };
     };
-    Line& line(size_t index) { /*ASSERT(index < m_rows);*/ return *m_lines[index]; }
+    Line& line(size_t index) { ASSERT(index < m_rows); return *m_lines[index]; }
 
     Line** m_lines { nullptr };
 

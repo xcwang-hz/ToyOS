@@ -406,8 +406,8 @@ void Terminal::set_cursor(unsigned row, unsigned column)
 {
     if (row == m_cursor_row && column == m_cursor_column)
         return;
-    // ASSERT(row < rows());
-    // ASSERT(column < columns());
+    ASSERT(row < rows());
+    ASSERT(column < columns());
     invalidate_cursor();
     m_cursor_row = row;
     m_cursor_column = column;
@@ -418,8 +418,8 @@ void Terminal::set_cursor(unsigned row, unsigned column)
 
 void Terminal::put_character_at(unsigned row, unsigned column, byte ch)
 {
-    // ASSERT(row < rows());
-    // ASSERT(column < columns());
+    ASSERT(row < rows());
+    ASSERT(column < columns());
     line(row).characters[column] = ch;
     line(row).attributes[column] = m_current_attribute;
 }

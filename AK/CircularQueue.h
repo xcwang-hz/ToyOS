@@ -39,7 +39,7 @@ public:
 
     T dequeue()
     {
-        // ASSERT(!is_empty());
+        ASSERT(!is_empty());
         T value = m_elements[m_head];
         m_head = (m_head + 1) % Capacity;
         --m_size;

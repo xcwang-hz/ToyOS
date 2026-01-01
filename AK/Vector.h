@@ -1,6 +1,6 @@
 #pragma once
 
-// #include "Assertions.h"
+#include "Assertions.h"
 #include "OwnPtr.h"
 #include "kmalloc.h"
 
@@ -38,7 +38,7 @@ public:
 
     void remove(size_t index)
     {
-        // ASSERT(index < m_size);
+        ASSERT(index < m_size);
         at(index).~T();
         for (size_t i = index + 1; i < m_size; ++i) {
             new (slot(i - 1)) T(move(at(i)));
@@ -139,7 +139,7 @@ public:
 
     T take_last()
     {
-        // ASSERT(!is_empty());
+        ASSERT(!is_empty());
         T value = move(last());
         last().~T();
         --m_impl->m_size;
@@ -148,7 +148,7 @@ public:
 
     T take_first()
     {
-        // ASSERT(!is_empty());
+        ASSERT(!is_empty());
         T value = move(first());
         remove(0);
         return value;
@@ -181,7 +181,7 @@ public:
 
     void unchecked_append(T&& value)
     {
-        // ASSERT((size() + 1) <= capacity());
+        ASSERT((size() + 1) <= capacity());
         new (m_impl->slot(m_impl->m_size)) T(move(value));
         ++m_impl->m_size;
     }
@@ -233,7 +233,7 @@ public:
 
     void resize(size_t new_size)
     {
-        // ASSERT(new_size >= size());
+        ASSERT(new_size >= size());
         if (!new_size)
             return;
         ensure_capacity(new_size);

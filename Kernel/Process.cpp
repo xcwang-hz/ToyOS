@@ -1657,7 +1657,7 @@ void Process::unblock()
         m_state = Process::Running;
         return;
     }
-    // ASSERT(m_state != Process::Runnable && m_state != Process::Running);
+    ASSERT(m_state != Process::Runnable && m_state != Process::Running);
     system.nblocked--;
     m_state = Process::Runnable;
 }

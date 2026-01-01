@@ -62,7 +62,7 @@ static inline size_t allocationSizeForStringImpl(size_t length)
 
 RetainPtr<StringImpl> StringImpl::create_uninitialized(size_t length, char*& buffer)
 {
-    // ASSERT(length);
+    ASSERT(length);
     void* slot = kmalloc(allocationSizeForStringImpl(length));
     if (!slot)
         return nullptr;
