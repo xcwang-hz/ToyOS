@@ -220,16 +220,16 @@ static inline Color ansi_color(unsigned color)
 //     set_cursor(m_saved_cursor_row, m_saved_cursor_column);
 // }
 
-// void Terminal::escape$H(const Vector<unsigned>& params)
-// {
-//     unsigned row = 1;
-//     unsigned col = 1;
-//     if (params.size() >= 1)
-//         row = params[0];
-//     if (params.size() >= 2)
-//         col = params[1];
-//     set_cursor(row - 1, col - 1);
-// }
+void Terminal::escape$H(const Vector<unsigned>& params)
+{
+    unsigned row = 1;
+    unsigned col = 1;
+    if (params.size() >= 1)
+        row = params[0];
+    if (params.size() >= 2)
+        col = params[1];
+    set_cursor(row - 1, col - 1);
+}
 
 void Terminal::escape$A(const Vector<unsigned>& params)
 {
@@ -370,7 +370,7 @@ void Terminal::execute_escape_sequence(byte final)
     // case 'B': escape$B(params); break;
     // case 'C': escape$C(params); break;
     // case 'D': escape$D(params); break;
-    // case 'H': escape$H(params); break;
+    case 'H': escape$H(params); break;
     case 'J': escape$J(params); break;
     // case 'K': escape$K(params); break;
     // case 'm': escape$m(params); break;

@@ -84,39 +84,39 @@ extern "C" void set_kernel_stack(uint32_t stack_top);
 #define sti() asm volatile("sti")
 // #define memory_barrier() asm volatile ("" ::: "memory")
 
-// static inline dword cpu_flags()
-// {
-//     dword flags;
-//     asm volatile(
-//         "pushf\n"
-//         "pop %0\n"
-//         :"=rm"(flags)
-//         ::"memory");
-//     return flags;
-// }
+static inline dword cpu_flags()
+{
+    dword flags;
+    asm volatile(
+        "pushf\n"
+        "pop %0\n"
+        :"=rm"(flags)
+        ::"memory");
+    return flags;
+}
 
-// inline bool are_interrupts_enabled()
-// {
-//     return cpu_flags() & 0x200;
-// }
+inline bool are_interrupts_enabled()
+{
+    return cpu_flags() & 0x200;
+}
 
-// class InterruptDisabler {
-// public:
-//     InterruptDisabler()
-//     {
-//         m_flags = cpu_flags();
-//         cli();
-//     }
+class InterruptDisabler {
+public:
+    InterruptDisabler()
+    {
+        m_flags = cpu_flags();
+        cli();
+    }
 
-//     ~InterruptDisabler()
-//     {
-//         if (m_flags & 0x200)
-//             sti();
-//     }
+    ~InterruptDisabler()
+    {
+        if (m_flags & 0x200)
+            sti();
+    }
 
-// private:
-//     dword m_flags;
-// };
+private:
+    dword m_flags;
+};
 
 /* Map IRQ0-15 @ ISR 0x50-0x5F */
 #define IRQ_VECTOR_BASE 0x50

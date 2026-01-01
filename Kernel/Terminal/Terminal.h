@@ -38,7 +38,7 @@ private:
 //     void escape$B(const Vector<unsigned>&);
 //     void escape$C(const Vector<unsigned>&);
 //     void escape$D(const Vector<unsigned>&);
-//     void escape$H(const Vector<unsigned>&);
+    void escape$H(const Vector<unsigned>&);
     void escape$J(const Vector<unsigned>&);
 //     void escape$K(const Vector<unsigned>&);
 //     void escape$m(const Vector<unsigned>&);

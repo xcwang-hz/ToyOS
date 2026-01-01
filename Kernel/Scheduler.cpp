@@ -3,6 +3,9 @@
 #include "kprintf.h"
 #include "system.h"
 #include "entry.h"
+#ifdef I386
+#include "i386.h"
+#endif
 
 #define LOG_EVERY_CONTEXT_SWITCH
 //#define SCHEDULER_DEBUG
@@ -18,7 +21,6 @@ static const dword time_slice = 5; // *10 = 50ms
 Process* current;
 // Process* g_last_fpu_process;
 static Process* s_colonel_process;
-static bool s_in_yield;
 
 // struct TaskRedirectionData {
 //     word selector;
@@ -173,10 +175,10 @@ bool Scheduler::pick_next()
 
 bool Scheduler::yield()
 {
-//     InterruptDisabler disabler;
-    ASSERT(!s_in_yield);
-    s_in_yield = true;
-
+#if I386    
+    InterruptDisabler disabler;
+#endif
+    
 //     if (!current) {
 //         kprintf("PANIC: sched_yield() with !current");
 //         HANG;
@@ -185,11 +187,9 @@ bool Scheduler::yield()
 //     //dbgprintf("%s<%u> yield()\n", current->name().characters(), current->pid());
 
     if (!pick_next()) {
-        s_in_yield = false;
         return 1;
     }
 
-    s_in_yield = false;
 //     //dbgprintf("yield() jumping to new process: %x (%s)\n", current->farPtr().selector, current->name().characters());
 //     switch_now();
     return 0;
@@ -332,7 +332,6 @@ void Scheduler::initialize()
 
     // current = nullptr;
     // g_last_fpu_process = nullptr;
-    s_in_yield = false;
     // load_task_register(s_redirection.selector);
 }
 
