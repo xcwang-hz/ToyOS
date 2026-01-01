@@ -101,7 +101,7 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         cli();
         // RTC::initialize();
         PIC::initialize();
-        //gdt_init();
+        gdt_init();
         idt_init();
         keyboard = new Keyboard;
         PIT::initialize();
