@@ -67,11 +67,12 @@ void register_irq_handler(byte number, IRQHandler&);
 void unregister_irq_handler(byte number, IRQHandler&);
 void flush_idt();
 void flush_gdt();
-// void load_task_register(word selector);
+void load_task_register(word selector);
 // word gdt_alloc_entry();
 // void gdt_free_entry(word);
 // Descriptor& get_gdt_entry(word selector);
 // void write_gdt_entry(word selector, Descriptor&);
+extern "C" void set_kernel_stack(uint32_t stack_top);
 
 #define HANG asm volatile( "cli; hlt" );
 #define LSW(x) ((dword)(x) & 0xFFFF)

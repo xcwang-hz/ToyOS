@@ -2,7 +2,6 @@
 #include "Process.h"
 #include "kmalloc.h"
 #include "StdLib.h"
-// #include "i386.h"
 #include "system.h"
 // #include <Kernel/FileDescriptor.h>
 // #include <Kernel/VirtualFileSystem.h>
@@ -20,6 +19,48 @@
 // #include "KSyms.h"
 // #include <WindowServer/WSWindow.h>
 // #include "MasterPTY.h"
+#ifdef I386
+#include "i386.h"
+
+asm(
+    ".globl enter_user_mode \n"
+    "enter_user_mode: \n"
+    "    mov 4(%esp), %eax \n"    // entry_point
+    "    mov 8(%esp), %ecx \n"    // user_stack_top
+    "    mov 12(%esp), %edx \n"   // kernel_stack_top
+    
+    // 1. Setup Data Segments for User Mode (RPL = 3)
+    "    mov $0x23, %bx \n"       // 0x20 (User Data) | 3 = 0x23
+    "    mov %bx, %ds \n"
+    "    mov %bx, %es \n"
+    "    mov %bx, %fs \n"
+    "    mov %bx, %gs \n"
+
+    // 2. Prepare the stack for IRET (Interrupt Return)
+    // Stack layout must be: SS, ESP, EFLAGS, CS, EIP
+    
+    "    pushl $0x23 \n"          // SS (User Data Selector | 3)
+    "    pushl %ecx \n"           // ESP (User Stack Pointer)
+    
+    "    pushf \n"                // Push EFLAGS
+    "    popl %ecx \n"
+    "    orl $0x200, %ecx \n"     // Enable Interrupts (IF flag)
+    "    pushl %ecx \n"           // EFLAGS (with IF=1)
+    
+    "    pushl $0x1b \n"          // CS (User Code Selector 0x18 | 3 = 0x1b)
+    "    pushl %eax \n"           // EIP (User Entry Point)
+    
+    // 3. Update TSS ESP0 
+    // This assumes we have a C++ function 'set_kernel_stack(u32)'
+    // We must ensure the TSS has the correct kernel stack for the NEXT interrupt
+    "    pushl %edx \n"           // Pass kernel_stack_top as argument
+    "    call set_kernel_stack \n" 
+    "    addl $4, %esp \n"        // Clean up argument
+    
+    // 4. Go!
+    "    iret \n"                 // Pops EIP, CS, EFLAGS, ESP, SS -> Switch to Ring 3
+);
+#endif
 
 //#define DEBUG_IO
 //#define TASK_DEBUG

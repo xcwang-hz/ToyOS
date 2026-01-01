@@ -58,6 +58,10 @@ struct AsyncifyContext {
     uint8_t buffer[65536];
 };
 
+#ifdef I386
+extern "C" void enter_user_mode(uint32_t entry_point, uint32_t user_stack_top, uint32_t kernel_stack_top);
+#endif
+
 class Process : public InlineLinkedListNode<Process> {
     // friend class InlineLinkedListNode<Process>;
     // friend class WSWindowManager; // FIXME: Make a better API for allocate_region().

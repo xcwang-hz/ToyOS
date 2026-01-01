@@ -1,7 +1,10 @@
+#include "Types.h"
 #include "kprintf.h"
 #include "types.h"
 #include "kmalloc.h"
 #include "i386.h"
+#include "StdLib.h"
+#include "TSS.h"
 // #include "Assertions.h"
 // #include "Process.h"
 // #include "MemoryManager.h"
@@ -26,6 +29,12 @@ static IRQHandler** s_irqHandler;
 // static Vector<word, KmallocEternalAllocator>* s_gdt_freelist;
 
 static word s_gdtLength;
+static TSS32 s_tss;
+
+void set_kernel_stack(uint32_t stack_top)
+{
+    s_tss.esp0 = stack_top;
+}
 
 // word gdt_alloc_entry()
 // {
@@ -366,7 +375,7 @@ void flush_gdt()
 void gdt_init()
 {
     s_gdt = static_cast<Descriptor*>(kmalloc_eternal(sizeof(Descriptor) * 256));
-    s_gdtLength = 5;
+    s_gdtLength = 6;
 
 //     s_gdt_freelist = new Vector<word, KmallocEternalAllocator>();
 //     s_gdt_freelist->ensure_capacity(256);
@@ -383,7 +392,20 @@ void gdt_init()
     writeRawGDTEntry(0x0018, 0x0000ffff, 0x00cffa00);
     writeRawGDTEntry(0x0020, 0x0000ffff, 0x00cff200);
 
+    dword base = (dword)&s_tss;
+    dword limit = sizeof(s_tss);
+    // Type=9 (Available 32-bit TSS), DPL=0
+    writeRawGDTEntry(0x0028, 
+        (base & 0xffff) << 16 | (limit & 0xffff), 
+        (base & 0xff000000) | ((base & 0x00ff0000) >> 16) | 0x00008900);
+
+    // Initialize the TSS structure
+    memset(&s_tss, 0, sizeof(s_tss));
+    s_tss.ss0 = 0x0010;                 // Kernel Data Segment
+    s_tss.esp0 = 0;                     // Will be set before jumping to user mode
+
     flush_gdt();
+    load_task_register(0x0028);
 }
 
 static void unimp_trap()
@@ -474,10 +496,10 @@ void idt_init()
     flush_idt();
 }
 
-// void load_task_register(word selector)
-// {
-//     asm("ltr %0"::"r"(selector));
-// }
+void load_task_register(word selector)
+{
+    asm("ltr %0"::"r"(selector));
+}
 
 void handle_irq()
 {

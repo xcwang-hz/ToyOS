@@ -53,6 +53,9 @@ struct multiboot_info_t {
     uint8_t  framebuffer_type;
 };
 
+static uint32_t user_stack[8192];
+static uint32_t kernel_stack[8192];
+
 extern "C" volatile int32_t js_pending_key = 0;
 extern void shell_main();
 Terminal* terminal1 = nullptr;
@@ -129,8 +132,8 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         terminal1->create_window(size, fb_ptr);
         terminal2->create_window(size, fb_ptr);
 
-        Process::create_kernel_process("Shell", shell_main);
-        Process::create_kernel_process("Background", task2_entry);
+        // Process::create_kernel_process("Shell", shell_main);
+        // Process::create_kernel_process("Background", task2_entry);
 
         RetainPtr<GraphicsBitmap> backing = GraphicsBitmap::create_wrapper(size, fb_ptr);
         Rect rect { 0, 0, w, h };
@@ -138,6 +141,14 @@ extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
         painter.fill_rect(rect, Color::Black);
         terminal1->paint();
         // terminal2->paint();
+
+#ifdef I386        
+        enter_user_mode(
+            (uint32_t)&shell_main,                  // Entry point
+            (uint32_t)user_stack + sizeof(user_stack), // User ESP
+            (uint32_t)kernel_stack + sizeof(kernel_stack) // Kernel ESP0 (for handling interrupts later)
+        );
+#endif
         initialized = true;
 
 #ifdef WASM
