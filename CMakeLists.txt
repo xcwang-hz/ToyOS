@@ -206,6 +206,27 @@ endmacro()
 add_i386_userland_prog(clear Userland/clear.cpp)
 add_i386_userland_prog(help Userland/help.cpp)
 
+set(INITRAMFS_I386 ${DIST_I386}/initramfs.cpio)
+set(ROOTFS_I386 ${DIST_I386}/rootfs)
+
+add_custom_command(
+    OUTPUT ${INITRAMFS_I386}
+    # Create directory structure
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${ROOTFS_I386}/bin
+    
+    # Copy i386 executables (strip them to reduce size, keeping them as ELF)
+    COMMAND llvm-strip ${DIST_USERLAND_I386}/clear -o ${ROOTFS_I386}/bin/clear
+    COMMAND llvm-strip ${DIST_USERLAND_I386}/help -o ${ROOTFS_I386}/bin/help
+    
+    # Pack into CPIO (New ASCII Format)
+    # We cd into the dir so paths inside CPIO are relative (e.g., "bin/clear")
+    COMMAND sh -c "cd ${ROOTFS_I386} && find . | cpio -o -H newc > ${INITRAMFS_I386}"
+    
+    DEPENDS clear_i386 help_i386
+    COMMENT "Generating i386 Initramfs (ELF)..."
+    VERBATIM
+)
+
 # ------------------------------------------------------------------------------
 # ISO Generation (toyos.iso)
 # ------------------------------------------------------------------------------
@@ -222,14 +243,14 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:toyos_i386> ${ISO_STAGING}/boot/toyos.bin
     # Copy GRUB config
     COMMAND ${CMAKE_COMMAND} -E copy ${GRUB_CFG} ${ISO_STAGING}/boot/grub/grub.cfg
-    # copy userland binaries here if using a Ramdisk/InitRD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DIST_USERLAND_I386} ${ISO_STAGING}/bin
+    # Copy CPIO to ISO
+    COMMAND ${CMAKE_COMMAND} -E copy ${INITRAMFS_I386} ${ISO_STAGING}/boot/initramfs.cpio
     # Generate ISO using grub-mkrescue
     COMMAND grub-mkrescue -o ${ISO_IMAGE} ${ISO_STAGING}
     # Clean up staging directory
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${ISO_STAGING}
-    DEPENDS toyos_i386 ${GRUB_CFG}
-    COMMENT "[ISO] Generating bootable ISO: ${ISO_IMAGE}"
+    DEPENDS toyos_i386 ${GRUB_CFG} ${INITRAMFS_I386}
+    COMMENT "[ISO] Generating bootable ISO with Initramfs..."
 )
 
 # Top-level target to build the ISO
@@ -360,6 +381,28 @@ endmacro()
 # Instantiate wasm Userland Programs
 add_wasm_userland_prog(clear Userland/clear.cpp)
 add_wasm_userland_prog(help Userland/help.cpp)
+
+set(INITRAMFS_WASM ${DIST_WASM}/initramfs.cpio)
+set(ROOTFS_WASM ${DIST_WASM}/rootfs)
+
+add_custom_command(
+    OUTPUT ${INITRAMFS_WASM}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${ROOTFS_WASM}/bin
+    
+    # Copy Wasm executables (Remove .wasm extension for "feeling" like native cmds)
+    COMMAND ${CMAKE_COMMAND} -E copy ${DIST_USERLAND_WASM}/clear.wasm ${ROOTFS_WASM}/bin/clear
+    COMMAND ${CMAKE_COMMAND} -E copy ${DIST_USERLAND_WASM}/help.wasm ${ROOTFS_WASM}/bin/help
+    
+    # Pack into CPIO
+    COMMAND sh -c "cd ${ROOTFS_WASM} && find . | cpio -o -H newc > ${INITRAMFS_WASM}"
+    
+    DEPENDS clear_wasm help_wasm
+    COMMENT "Generating Wasm Initramfs (Wasm Modules)..."
+    VERBATIM
+)
+
+add_custom_target(gen_initramfs_wasm_target DEPENDS ${INITRAMFS_WASM})
+add_dependencies(toyos_wasm gen_initramfs_wasm_target)
 
 # 6. Post-Build Assets Copy
 # Copies index.html and server.py to the build directory
