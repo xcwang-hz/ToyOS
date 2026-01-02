@@ -10,8 +10,6 @@
 #include <sys/types.h>
 #include <Kernel/Syscall.h>
 
-int errno;
-
 extern "C" {
 
 // pid_t fork()

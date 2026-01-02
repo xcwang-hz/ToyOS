@@ -14,11 +14,11 @@ message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 set(WASM_OPT_FLAGS "")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-g -O0 -DDEBUG)
-    # For Wasm: keep debug symbols in the final binary
+    # For wasm: keep debug symbols in the final binary
     set(WASM_OPT_FLAGS "-g") 
 else()
     add_compile_options(-O2 -DNDEBUG)
-    # For Wasm: strip debug symbols to reduce size
+    # For wasm: strip debug symbols to reduce size
     set(WASM_OPT_FLAGS "--strip-debug")
 endif()
 
@@ -72,16 +72,12 @@ set(I386_KERNEL_ONLY_SOURCES
 )
 
 set(LIBC_SOURCES
+    LibC/entry.cpp
     LibC/stdio.cpp
     LibC/string.cpp
     LibC/unistd.cpp
+    LibC/shell.cpp
 )
-
-set(USERLAND_SOURCES
-    Userland/shell.cpp
-)
-
-set(ALL_USER_SOURCES ${LIBC_SOURCES} ${USERLAND_SOURCES})
 
 # Output directories (matches build/i386 and build/wasm)
 set(DIST_I386 ${CMAKE_BINARY_DIR}/i386)
@@ -99,7 +95,6 @@ set(I386_INCLUDES
 set(I386_SOURCES
     ${I386_KERNEL_ONLY_SOURCES}
     ${KERNEL_COMMON_SOURCES}
-    ${ALL_USER_SOURCES}
 )
 
 add_executable(toyos_i386 ${I386_SOURCES})
@@ -153,6 +148,64 @@ add_custom_command(TARGET toyos_i386 POST_BUILD
     COMMENT "Verifying Multiboot header compatibility..."
 )
 
+set(DIST_USERLAND_I386 ${DIST_I386}/bin)
+file(MAKE_DIRECTORY ${DIST_USERLAND_I386})
+
+add_library(LibC_i386 STATIC ${LIBC_SOURCES})
+
+# Apply compilation flags for LibC (similar to Kernel but strictly 32-bit ELF)
+target_include_directories(LibC_i386 PRIVATE ${COMMON_INCLUDES})
+target_compile_options(LibC_i386 PRIVATE
+    --target=i386-pc-none-elf -march=i386
+    -ffreestanding -Wall -Wextra -std=c++20
+    -fno-exceptions -fno-rtti -fno-threadsafe-statics
+    -nostdinc -fno-pie
+    -DSERENITY -DI386 -DUSERLAND
+)
+
+set_target_properties(LibC_i386 PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${DIST_I386}
+    OUTPUT_NAME "LibC"
+    PREFIX ""
+)
+
+macro(add_i386_userland_prog NAME SOURCE)
+    # The executable consists of the source file AND the assembly entry point (crt0.s)
+    add_executable(${NAME}_i386 ${SOURCE})
+
+    # Link against our custom LibC
+    target_link_libraries(${NAME}_i386 LibC_i386)
+
+    # Set output location
+    set_target_properties(${NAME}_i386 PROPERTIES 
+        RUNTIME_OUTPUT_DIRECTORY ${DIST_USERLAND_I386}
+        OUTPUT_NAME "${NAME}" # No extension for ELF files usually
+        SUFFIX ""
+    )
+
+    # Compilation flags
+    target_include_directories(${NAME}_i386 PRIVATE ${COMMON_INCLUDES})
+    target_compile_options(${NAME}_i386 PRIVATE
+        --target=i386-pc-none-elf -march=i386
+        -ffreestanding -Wall -Wextra -std=c++20
+        -fno-exceptions -fno-rtti
+        -nostdinc -fno-pie
+        -DUSERLAND
+    )
+
+    # Linker flags (Critical: Use custom linker script and prevent standard libs)
+    target_link_options(${NAME}_i386 PRIVATE
+        --target=i386-pc-none-elf -march=i386
+        -nostdlib
+        -fuse-ld=lld
+        -Wl,-T,${CMAKE_CURRENT_SOURCE_DIR}/Userland/linker.ld
+        -Wl,--no-pie
+        -Wl,--entry=_start
+    )
+endmacro()
+add_i386_userland_prog(clear Userland/clear.cpp)
+add_i386_userland_prog(help Userland/help.cpp)
+
 # ------------------------------------------------------------------------------
 # ISO Generation (toyos.iso)
 # ------------------------------------------------------------------------------
@@ -169,6 +222,8 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:toyos_i386> ${ISO_STAGING}/boot/toyos.bin
     # Copy GRUB config
     COMMAND ${CMAKE_COMMAND} -E copy ${GRUB_CFG} ${ISO_STAGING}/boot/grub/grub.cfg
+    # copy userland binaries here if using a Ramdisk/InitRD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DIST_USERLAND_I386} ${ISO_STAGING}/bin
     # Generate ISO using grub-mkrescue
     COMMAND grub-mkrescue -o ${ISO_IMAGE} ${ISO_STAGING}
     # Clean up staging directory
@@ -181,7 +236,7 @@ add_custom_command(
 add_custom_target(toyos_iso ALL DEPENDS ${ISO_IMAGE})
 
 # ------------------------------------------------------------------------------
-# Target 2: Wasm Kernel (toyos.wasm)
+# Target 2: wasm Kernel (toyos.wasm)
 # ------------------------------------------------------------------------------
 
 set(WASM_KERNEL_ONLY_SOURCES
@@ -191,7 +246,6 @@ set(WASM_KERNEL_ONLY_SOURCES
 set(WASM_SOURCES
     ${WASM_KERNEL_ONLY_SOURCES}
     ${KERNEL_COMMON_SOURCES}
-    ${ALL_USER_SOURCES}
 )
 
 # 2. Create Executable Target
@@ -247,12 +301,72 @@ add_custom_command(TARGET toyos_wasm POST_BUILD
     VERBATIM
 )
 
+set(DIST_USERLAND_WASM ${DIST_WASM}/bin)
+file(MAKE_DIRECTORY ${DIST_USERLAND_WASM})
+
+add_library(LibC_wasm STATIC ${LIBC_SOURCES})
+
+target_include_directories(LibC_wasm PRIVATE ${COMMON_INCLUDES})
+target_compile_options(LibC_wasm PRIVATE
+    --target=wasm32
+    -ffreestanding -Wall -Wextra -std=c++20
+    -fno-exceptions -fno-rtti -fno-threadsafe-statics
+    -nostdinc 
+    -DSERENITY -DWASM -DUSERLAND
+)
+
+set_target_properties(LibC_wasm PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${DIST_WASM}
+    OUTPUT_NAME "LibC"
+    PREFIX ""
+)
+
+# 2. Macro to add wasm user programs
+macro(add_wasm_userland_prog NAME SOURCE)
+    add_executable(${NAME}_wasm ${SOURCE})
+
+    # Link against wasm version of LibC
+    target_link_libraries(${NAME}_wasm LibC_wasm)
+
+    set_target_properties(${NAME}_wasm PROPERTIES 
+        RUNTIME_OUTPUT_DIRECTORY ${DIST_USERLAND_WASM}
+        OUTPUT_NAME "${NAME}"
+        SUFFIX ".wasm"
+    )
+
+    target_include_directories(${NAME}_wasm PRIVATE ${COMMON_INCLUDES})
+    target_compile_options(${NAME}_wasm PRIVATE
+        --target=wasm32
+        -ffreestanding -Wall -Wextra -std=c++20
+        -fno-exceptions -fno-rtti
+        -nostdinc
+        -DWASM -DUSERLAND
+    )
+
+    # wasm Linker Options
+    # We explicitly tell the linker to use _start (from entry.cpp) as the entry point
+    target_link_options(${NAME}_wasm PRIVATE
+        --target=wasm32
+        -nostdlib
+        -fuse-ld=lld
+        -Wl,--entry=_start 
+        -Wl,--allow-undefined 
+    )
+    
+    # Optional: Run Asyncify on user programs if they use blocking syscalls that yield
+    # add_custom_command(...)
+endmacro()
+
+# Instantiate wasm Userland Programs
+add_wasm_userland_prog(clear Userland/clear.cpp)
+add_wasm_userland_prog(help Userland/help.cpp)
+
 # 6. Post-Build Assets Copy
 # Copies index.html and server.py to the build directory
 add_custom_command(TARGET toyos_wasm POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/arch/wasm/index.html ${DIST_WASM}/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/arch/wasm/server.py ${DIST_WASM}/
-    COMMENT "Deploying Wasm assets to ${DIST_WASM}..."
+    COMMENT "Deploying wasm assets to ${DIST_WASM}..."
 )
 
 # ------------------------------------------------------------------------------

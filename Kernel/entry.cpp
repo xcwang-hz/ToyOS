@@ -71,15 +71,15 @@ void check_js_key() {
 }
 
 void shell_entry() {
-#ifdef I386    
-    enter_user_mode(
-        (uint32_t)&shell_main,                  // Entry point
-        (uint32_t)user_stack + sizeof(user_stack), // User ESP
-        (uint32_t)kernel_stack + sizeof(kernel_stack) // Kernel ESP0 (for handling interrupts later)
-    );
-#else
-    shell_main();    
-#endif    
+// #ifdef I386    
+//     enter_user_mode(
+//         (uint32_t)&shell_main,                  // Entry point
+//         (uint32_t)user_stack + sizeof(user_stack), // User ESP
+//         (uint32_t)kernel_stack + sizeof(kernel_stack) // Kernel ESP0 (for handling interrupts later)
+//     );
+// #else
+//     shell_main();    
+// #endif    
 }
 
 void task1_entry() {

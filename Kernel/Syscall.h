@@ -5,6 +5,8 @@
 #define ENUMERATE_SYSCALLS \
     __ENUMERATE_SYSCALL(putch) \
     __ENUMERATE_SYSCALL(read) \
+    __ENUMERATE_SYSCALL(get_arguments) \
+    __ENUMERATE_SYSCALL(exit) \
 
 namespace Syscall {
 
