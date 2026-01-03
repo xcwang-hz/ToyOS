@@ -2,19 +2,14 @@
 #include "Process.h"
 #include "kprintf.h"
 #include "system.h"
-#include "entry.h"
 #ifdef I386
-#include "i386.h"
+#include <arch/i386/i386.h>
+#else
+#include <arch/wasm/entry.h>
 #endif
 
 #define LOG_EVERY_CONTEXT_SWITCH
 //#define SCHEDULER_DEBUG
-
-#ifdef WASM
-extern "C" void wasm_async_yield(void* prev_ctx_addr, void* next_ctx_addr);
-#else
-extern "C" void context_switch_asm(uint32_t* prev_stack_ptr_addr, uint32_t next_stack_ptr);
-#endif
 
 static const dword time_slice = 5; // *10 = 50ms
 
@@ -239,8 +234,7 @@ bool Scheduler::context_switch(Process& process)
             current->set_state(Process::Runnable);
 
 #ifdef LOG_EVERY_CONTEXT_SWITCH
-        dbgprintf("Scheduler: %s(%u) -> %s(%u)\n", current->name(), current->pid(), process.name(), process.pid());
-        // dbgprintf("Scheduler: %s(%u) -> %s(%u)\n", current->name().characters(), current->pid(), process.name().characters(), process.pid());
+        dbgprintf("Scheduler: %s(%u) -> %s(%u)\n", current->name().characters(), current->pid(), process.name().characters(), process.pid());
 #endif
     }
 
@@ -253,10 +247,10 @@ bool Scheduler::context_switch(Process& process)
     // 2. JS will handle the actual data saving using the pointers we passed.
     // 3. When this function returns, it means we have successfully 
     //    rewound (restored) the stack for the 'prev' process (which is now current).
-    wasm_async_yield(&prev_process->m_asyncify_ctx, &process.m_asyncify_ctx);
-    check_js_key();
+    js_context_switch(&prev_process->m_asyncify_ctx, &process.m_asyncify_ctx);
+    check_wasm_key();
 #else    
-    context_switch_asm(&prev_process->m_kernel_stack_top, process.m_kernel_stack_top);
+    asm_context_switch(&prev_process->m_kernel_stack_top, process.m_kernel_stack_top);
 #endif
 
 // #ifdef COOL_GLOBALS

@@ -58,16 +58,13 @@ struct AsyncifyContext {
     uint8_t buffer[65536];
 };
 
-#ifdef I386
-extern "C" void enter_user_mode(uint32_t entry_point, uint32_t user_stack_top, uint32_t kernel_stack_top);
-#endif
-
 class Process : public InlineLinkedListNode<Process> {
     // friend class InlineLinkedListNode<Process>;
     // friend class WSWindowManager; // FIXME: Make a better API for allocate_region().
     // friend class GraphicsBitmap; // FIXME: Make a better API for allocate_region().
 public:
-    static Process* create_kernel_process(const char* name, void (*entry)());
+    static Process* create_kernel_process(String&& name, void (*entry)());
+    static Process* create_user_process(const String& path);
     // static Process* create_user_process(const String& path, uid_t, gid_t, pid_t ppid, int& error, Vector<String>&& arguments = Vector<String>(), Vector<String>&& environment = Vector<String>(), TTY* = nullptr);
     ~Process();
 
@@ -109,7 +106,7 @@ public:
 
     // static Process* from_pid(pid_t);
 
-    const char* name() const { return m_name; }
+    const String& name() const { return m_name; }
     pid_t pid() const { return m_pid; }
     // pid_t sid() const { return m_sid; }
     // pid_t pgid() const { return m_pgid; }
@@ -307,7 +304,7 @@ private:
     // friend class Scheduler;
     // friend class Region;
     
-    Process(const char* name, void (*entry)());
+    Process(String&& name, void (*entry)());
     // Process(String&& name, uid_t, gid_t, pid_t ppid, RingLevel, RetainPtr<Inode>&& cwd = nullptr, RetainPtr<Inode>&& executable = nullptr, TTY* = nullptr, Process* fork_parent = nullptr);
 
     void setup_kernel_stack(void (*entry)());
@@ -320,7 +317,7 @@ private:
     // RetainPtr<PageDirectory> m_page_directory;
 
 
-    char m_name[32];
+    String m_name;
     pid_t m_pid { 0 };
     // uid_t m_uid { 0 };
     // gid_t m_gid { 0 };

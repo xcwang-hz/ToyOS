@@ -72,7 +72,10 @@ void load_task_register(word selector);
 // void gdt_free_entry(word);
 // Descriptor& get_gdt_entry(word selector);
 // void write_gdt_entry(word selector, Descriptor&);
+
 extern "C" void set_kernel_stack(uint32_t stack_top);
+extern "C" void asm_context_switch(uint32_t* prev_save_addr, uint32_t next_stack_val);
+extern "C" void enter_user_mode(uint32_t entry_point, uint32_t user_stack_top, uint32_t kernel_stack_top);
 
 #define HANG asm volatile( "cli; hlt" );
 #define LSW(x) ((dword)(x) & 0xFFFF)

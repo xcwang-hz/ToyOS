@@ -68,7 +68,6 @@ set(I386_KERNEL_ONLY_SOURCES
     arch/i386/PIC.cpp
     arch/i386/boot.S
     arch/i386/entry.cpp
-    arch/i386/switch.S
     arch/i386/i386.cpp
     arch/i386/i8253.cpp
 )
@@ -301,7 +300,7 @@ target_link_options(toyos_wasm PRIVATE
     --target=wasm32 -nostdlib
     -Wl,--no-entry
     -Wl,--export=wasm_entry
-    -Wl,--export=js_pending_key
+    -Wl,--export=wasm_pending_key
     -Wl,--allow-undefined
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!
     -Wl,--import-memory
@@ -314,7 +313,7 @@ add_custom_command(TARGET toyos_wasm POST_BUILD
             -o $<TARGET_FILE_DIR:toyos_wasm>/toyos_wasm.async.wasm
             --asyncify
             # [CRITICAL] Tell Asyncify: "When C++ calls this import, start unwinding."
-            --pass-arg=asyncify-imports@env.wasm_async_yield
+            --pass-arg=asyncify-imports@env.js_context_switch
             # Prevent other imports (like kmalloc) from triggering unwinding
             --pass-arg=asyncify-ignore-imports
             ${WASM_OPT_FLAGS}

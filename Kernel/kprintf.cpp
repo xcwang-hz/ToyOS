@@ -2,15 +2,13 @@
 // #include "Console.h"
 #ifdef I386
 #include "IO.h"
+#else
+#include <arch/wasm/entry.h>
 #endif
 #include <LibC/stdarg.h>
 // #include "Process.h"
 #include <AK/Types.h>
 #include <AK/printf.cpp>
-
-#ifdef WASM
-    extern "C" void js_debug_char(char c);
-#endif
 
 // static void console_putch(char*&, char ch)
 // {
@@ -21,7 +19,7 @@ static void debugger_putch(char*&, char ch)
 {
 #ifdef I386
     IO::out8(0xe9, ch);
-#elif defined(WASM)
+#else
     js_debug_char(ch);
 #endif    
 }

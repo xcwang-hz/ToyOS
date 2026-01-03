@@ -1,8 +1,8 @@
 #include "types.h"
 #include "Process.h"
 #include "kmalloc.h"
-#include "StdLib.h"
 #include "system.h"
+#include <Kernel/CpioFileSystem.h>
 // #include <Kernel/FileDescriptor.h>
 // #include <Kernel/VirtualFileSystem.h>
 // #include "ELFLoader.h"
@@ -20,46 +20,9 @@
 // #include <WindowServer/WSWindow.h>
 // #include "MasterPTY.h"
 #ifdef I386
-#include "i386.h"
-
-asm(
-    ".globl enter_user_mode \n"
-    "enter_user_mode: \n"
-    "    mov 4(%esp), %eax \n"    // entry_point
-    "    mov 8(%esp), %ecx \n"    // user_stack_top
-    "    mov 12(%esp), %edx \n"   // kernel_stack_top
-    
-    // 1. Setup Data Segments for User Mode (RPL = 3)
-    "    mov $0x23, %bx \n"       // 0x20 (User Data) | 3 = 0x23
-    "    mov %bx, %ds \n"
-    "    mov %bx, %es \n"
-    "    mov %bx, %fs \n"
-    "    mov %bx, %gs \n"
-
-    // 2. Prepare the stack for IRET (Interrupt Return)
-    // Stack layout must be: SS, ESP, EFLAGS, CS, EIP
-    
-    "    pushl $0x23 \n"          // SS (User Data Selector | 3)
-    "    pushl %ecx \n"           // ESP (User Stack Pointer)
-    
-    "    pushf \n"                // Push EFLAGS
-    "    popl %ecx \n"
-    "    orl $0x200, %ecx \n"     // Enable Interrupts (IF flag)
-    "    pushl %ecx \n"           // EFLAGS (with IF=1)
-    
-    "    pushl $0x1b \n"          // CS (User Code Selector 0x18 | 3 = 0x1b)
-    "    pushl %eax \n"           // EIP (User Entry Point)
-    
-    // 3. Update TSS ESP0 
-    // This assumes we have a C++ function 'set_kernel_stack(u32)'
-    // We must ensure the TSS has the correct kernel stack for the NEXT interrupt
-    "    pushl %edx \n"           // Pass kernel_stack_top as argument
-    "    call set_kernel_stack \n" 
-    "    addl $4, %esp \n"        // Clean up argument
-    
-    // 4. Go!
-    "    iret \n"                 // Pops EIP, CS, EFLAGS, ESP, SS -> Switch to Ring 3
-);
+#include <arch/i386/i386.h>
+#else
+#include <arch/wasm/entry.h>
 #endif
 
 //#define DEBUG_IO
@@ -520,8 +483,12 @@ void Process::initialize()
 //     return rc;
 // }
 
+Process* Process::create_user_process(const String& path)
 // Process* Process::create_user_process(const String& path, uid_t uid, gid_t gid, pid_t parent_pid, int& error, Vector<String>&& arguments, Vector<String>&& environment, TTY* tty)
-// {
+{
+    uint32_t file_size = 0;
+    uint8_t* elf_data = CpioFileSystem::the().find_file(path.characters(), &file_size);
+
 //     // FIXME: Don't split() the path twice (sys$spawn also does it...)
 //     auto parts = path.split('/');
 //     if (arguments.is_empty()) {
@@ -538,6 +505,7 @@ void Process::initialize()
 //         cwd = VFS::the().root_inode();
 
 //     auto* process = new Process(parts.take_last(), uid, gid, parent_pid, Ring3, move(cwd), nullptr, tty);
+    auto* process = new Process("", nullptr);
 
 //     error = process->exec(path, move(arguments), move(environment));
 //     if (error != 0) {
@@ -556,8 +524,8 @@ void Process::initialize()
 //     kprintf("Process %u (%s) spawned @ %p\n", process->pid(), process->name().characters(), process->m_tss.eip);
 // #endif
 //     error = 0;
-//     return process;
-// }
+    return process;
+}
 
 // int Process::sys$get_environment(char*** environ)
 // {
@@ -598,9 +566,9 @@ void Process::initialize()
 //     return 0;
 // }
 
-Process* Process::create_kernel_process(const char* name, void (*entry)())
+Process* Process::create_kernel_process(String&& name, void (*entry)())
 {
-    auto* process = new Process(name, entry);
+    auto* process = new Process(move(name), entry);
 //     auto* process = new Process(move(name), (uid_t)0, (gid_t)0, (pid_t)0, Ring0);
 //     process->m_tss.eip = (dword)e;
 
@@ -619,10 +587,10 @@ Process* Process::create_kernel_process(const char* name, void (*entry)())
     return process;
 }
 
-Process::Process(const char* name, void (*entry)())
+Process::Process(String&& name, void (*entry)())
 // Process::Process(String&& name, uid_t uid, gid_t gid, pid_t ppid, RingLevel ring, RetainPtr<Inode>&& cwd, RetainPtr<Inode>&& executable, TTY* tty, Process* fork_parent)
-    // : m_name(name)
-    : m_entry(entry)
+    : m_name(name)
+    , m_entry(entry)
     , m_pid(next_pid++) // FIXME: RACE: This variable looks racy!
 //     , m_uid(uid)
 //     , m_gid(gid)
@@ -636,10 +604,6 @@ Process::Process(const char* name, void (*entry)())
 //     , m_ppid(ppid)
 {
     m_is_first_time = true;
-    int i = 0;
-    for (; i < 31 && name[i] != '\0'; ++i)
-        m_name[i] = name[i];
-    m_name[i] = '\0';
 
 //     memset(&m_fpu_state, 0, sizeof(FPUState));
 

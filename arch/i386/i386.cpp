@@ -68,6 +68,65 @@ asm(
     "    iret\n"
 );
 
+// void asm_context_switch(uint32_t* prev_save_addr, uint32_t next_stack_val);
+//
+// Stack Layout (after pushf + pusha):
+// 44(%esp) = next_stack_val (Param 2: Value of the new stack top)
+// 40(%esp) = prev_save_addr (Param 1: Address to save the old stack top)
+// 36(%esp) = Return Address (Caller's return address)
+// 32(%esp) = EFLAGS
+// 0(%esp)  = PUSHA (8 registers * 4 bytes = 32 bytes)
+asm(
+    ".globl asm_context_switch\n"
+    "asm_context_switch: \n"
+    "    pushf\n"
+    "    pusha\n"
+    "    mov 40(%esp), %eax\n"
+    "    mov %esp, (%eax)\n"
+    "    mov 44(%esp), %eax\n"
+    "    mov %eax, %esp\n"
+    "    popa\n"
+    "    popf\n"
+    "    ret\n"
+);
+
+asm(
+    ".globl enter_user_mode \n"
+    "enter_user_mode: \n"
+    "    mov 4(%esp), %eax \n"    // entry_point
+    "    mov 8(%esp), %ecx \n"    // user_stack_top
+    "    mov 12(%esp), %edx \n"   // kernel_stack_top
+    
+    // 1. Setup Data Segments for User Mode (RPL = 3)
+    "    mov $0x23, %bx \n"       // 0x20 (User Data) | 3 = 0x23
+    "    mov %bx, %ds \n"
+    "    mov %bx, %es \n"
+    "    mov %bx, %fs \n"
+    "    mov %bx, %gs \n"
+
+    // 2. Prepare the stack for IRET (Interrupt Return)
+    // Stack layout must be: SS, ESP, EFLAGS, CS, EIP
+    
+    "    pushl $0x23 \n"          // SS (User Data Selector | 3)
+    "    pushl %ecx \n"           // ESP (User Stack Pointer)
+    
+    "    pushf \n"                // Push EFLAGS
+    "    popl %ecx \n"
+    "    orl $0x200, %ecx \n"     // Enable Interrupts (IF flag)
+    "    pushl %ecx \n"           // EFLAGS (with IF=1)
+    
+    "    pushl $0x1b \n"          // CS (User Code Selector 0x18 | 3 = 0x1b)
+    "    pushl %eax \n"           // EIP (User Entry Point)
+    
+    // 3. Update TSS ESP0 
+    // This assumes we have a C++ function 'set_kernel_stack(u32)'
+    // We must ensure the TSS has the correct kernel stack for the NEXT interrupt
+    "    pushl %edx \n"           // Pass kernel_stack_top as argument
+    "    call set_kernel_stack \n" 
+    "    addl $4, %esp \n"        // Clean up argument
+    "    iret \n"                 // Pops EIP, CS, EFLAGS, ESP, SS -> Switch to Ring 3
+);
+
 // #define EH_ENTRY(ec) \
 // extern "C" void exception_ ## ec ## _handler(RegisterDumpWithExceptionCode&); \
 // extern "C" void exception_ ## ec ## _entry(); \

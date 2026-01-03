@@ -75,7 +75,7 @@
             codeToSend |= 0x80;
 
           // Call the exported C++ function
-          const pendingKeyAddr = kernelInstance.exports.js_pending_key.value; 
+          const pendingKeyAddr = kernelInstance.exports.wasm_pending_key.value; 
           const mem32 = new Int32Array(wasmMemory.buffer);
           mem32[pendingKeyAddr / 4] = codeToSend;
         } else {
@@ -92,10 +92,24 @@
             memory: wasmMemory,
 
             // [Graphics Interface]
-            canvas_init: (ptr, width, height) => {
+            js_canvas_init: (ptr, width, height) => {
               const bufferSize = width * height * 4;
               const dataArray = new Uint8ClampedArray(wasmMemory.buffer, ptr, bufferSize);
               sharedImgData = new ImageData(dataArray, width, height);
+            },
+
+            js_context_switch: function(prevCtxPtr, nextCtxPtr) {
+              // C++ requested a yield (Unwind Phase)
+              if (kernelInstance.exports.asyncify_get_state() == 0) {
+                console.log(`[JS] Context Switch: Save to ${prevCtxPtr}, Next is ${nextCtxPtr}`);
+                kernelInstance.exports.asyncify_start_unwind(prevCtxPtr);
+                initializedContexts.add(prevCtxPtr);
+                nextProcessCtxPtr = nextCtxPtr;
+              }
+              else {
+                console.log(`[JS] Process Resumed.`);
+                kernelInstance.exports.asyncify_stop_rewind();
+              }
             },
 
             js_debug_char: (ch) => {
@@ -107,19 +121,6 @@
                 debugLineBuffer += String.fromCharCode(ch);
               }                
             },
-            wasm_async_yield: function(prevCtxPtr, nextCtxPtr) {
-              // 1. C++ requested a yield (Unwind Phase)
-              if (kernelInstance.exports.asyncify_get_state() == 0) {
-                console.log(`[JS] Context Switch: Save to ${prevCtxPtr}, Next is ${nextCtxPtr}`);
-                kernelInstance.exports.asyncify_start_unwind(prevCtxPtr);
-                initializedContexts.add(prevCtxPtr);
-                nextProcessCtxPtr = nextCtxPtr;
-              }
-              else {
-                console.log(`[JS] Process Resumed.`);
-                kernelInstance.exports.asyncify_stop_rewind();
-              }
-            }
           }
         };
 

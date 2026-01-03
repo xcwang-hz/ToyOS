@@ -78,6 +78,5 @@ extern "C" void kernel_entry(int width, int height, uint32_t framebuffer, uint8_
     terminal2->paint();
 
     CpioFileSystem::initialize(cpio_start);
-    uint32_t file_size = 0;
-    uint8_t* elf_data = CpioFileSystem::the().find_file("bin/clear2", &file_size);        
+    Process::create_user_process("bin/clear");
 }
