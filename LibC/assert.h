@@ -10,7 +10,7 @@ void __assertion_failed(const char* msg, const char* file, unsigned line, const 
 // #define CRASH() do { asm volatile("ud2"); } while(0)
 #define ASSERT assert
 // #define RELEASE_ASSERT assert
-// #define ASSERT_NOT_REACHED() assert(false)
+#define ASSERT_NOT_REACHED() assert(false)
 
 __END_DECLS
 

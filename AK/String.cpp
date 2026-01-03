@@ -36,8 +36,8 @@ String String::empty()
 
 String String::substring(size_t start, size_t length) const
 {
-    // ASSERT(m_impl);
-    // ASSERT(start + length <= m_impl->length());
+    ASSERT(m_impl);
+    ASSERT(start + length <= m_impl->length());
     // FIXME: This needs some input bounds checking.
     char* buffer;
     auto newImpl = StringImpl::create_uninitialized(length, buffer);

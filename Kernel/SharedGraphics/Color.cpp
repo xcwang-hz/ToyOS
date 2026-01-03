@@ -1,5 +1,5 @@
 #include "Color.h"
-// #include <AK/Assertions.h>
+#include <AK/Assertions.h>
 
 Color::Color(NamedColor named)
 {
@@ -20,7 +20,7 @@ Color::Color(NamedColor named)
     case DarkGray: rgb = { 64, 64, 64 }; break;
     case MidGray: rgb = { 127, 127, 127 }; break;
     case LightGray: rgb = { 192, 192, 192 }; break;
-    default: /*ASSERT_NOT_REACHED(); */ break;
+    default: ASSERT_NOT_REACHED(); break;
     }
 
     m_value = make_rgb(rgb.r, rgb.g, rgb.b);

@@ -8,6 +8,7 @@ void memcpy(void*, const void*, dword);
 void strcpy(char*, const char*);
 int strcmp(char const*, const char*);
 int strncmp(const char*, const char*, size_t);
+long hexstrtol(const char* s);
 size_t strlen(const char*);
 void *memset(void*, byte, dword);
 char *strdup(const char*);

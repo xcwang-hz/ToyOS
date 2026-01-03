@@ -45,6 +45,7 @@ set(COMMON_INCLUDES
 set(KERNEL_COMMON_SOURCES
     AK/String.cpp
     AK/StringImpl.cpp
+    Kernel/CpioFileSystem.cpp
     Kernel/IRQHandler.cpp
     Kernel/Keyboard.cpp
     Kernel/Process.cpp

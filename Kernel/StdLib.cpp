@@ -156,6 +156,18 @@ int strncmp(const char* s1, const char* s2, size_t n)
     return 0;
 }
 
+long hexstrtol(const char* s) 
+{
+    long val = 0;
+    for (int i = 0; i < 8; i++) {
+        val <<= 4;
+        if (s[i] >= '0' && s[i] <= '9') val += s[i] - '0';
+        else if (s[i] >= 'a' && s[i] <= 'f') val += s[i] - 'a' + 10;
+        else if (s[i] >= 'A' && s[i] <= 'F') val += s[i] - 'A' + 10;
+    }
+    return val;
+}
+
 // char* strdup(const char *str)
 // {
 //     dword len = strlen(str);
