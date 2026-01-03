@@ -8,65 +8,84 @@
 #include <SharedGraphics/GraphicsBitmap.h>
 #include "Painter.h"
 #include "Syscall.h"
-#ifdef I386
-#include "i386.h"
-#include "i8253.h"
-#include "PIC.h"
 #include "Keyboard.h"
-#else
-#include "entry.h"
-uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-#endif
 
-/* * Multiboot Info Structure (Partial definition)
- * We need the framebuffer fields which start at offset 88 (0x58).
- */
-struct multiboot_info_t {
-    uint32_t flags;
-    uint32_t mem_lower;
-    uint32_t mem_upper;
-    uint32_t boot_device;
-    uint32_t cmdline;
-    uint32_t mods_count;
-    uint32_t mods_addr;
-    uint32_t syms[4];
-    uint32_t mmap_length;
-    uint32_t mmap_addr;
-    uint32_t drives_length;
-    uint32_t drives_addr;
-    uint32_t config_table;
-    uint32_t boot_loader_name;
-    uint32_t apm_table;
-    uint32_t vbe_control_info;
-    uint32_t vbe_mode_info;
-    uint16_t vbe_mode;
-    uint16_t vbe_interface_seg;
-    uint16_t vbe_interface_off;
-    uint16_t vbe_interface_len;
-    
-    /* Framebuffer info (Added in Multiboot 1) */
-    uint64_t framebuffer_addr;  // Physical address of the screen
-    uint32_t framebuffer_pitch; // Bytes per line
-    uint32_t framebuffer_width;
-    uint32_t framebuffer_height;
-    uint8_t  framebuffer_bpp;   // Bits per pixel (e.g., 32)
-    uint8_t  framebuffer_type;
+struct CPIOHeader {
+    char c_magic[6];    // "070701"
+    char c_ino[8];
+    char c_mode[8];
+    char c_uid[8];
+    char c_gid[8];
+    char c_nlink[8];
+    char c_mtime[8];
+    char c_filesize[8];
+    char c_devmajor[8];
+    char c_devminor[8];
+    char c_rdevmajor[8];
+    char c_rdevminor[8];
+    char c_namesize[8];
+    char c_check[8];
 };
 
 static uint32_t user_stack[8192];
 static uint32_t kernel_stack[8192];
 
-extern "C" volatile int32_t js_pending_key = 0;
 extern void shell_main();
 Terminal* terminal1 = nullptr;
 Terminal* terminal2 = nullptr;
 system_t system;
-bool initialized = false;
-void check_js_key() {
-    if (js_pending_key != 0) {
-        int key = js_pending_key;
-        js_pending_key = 0;
-        Keyboard::the().handle_scancode((byte)key);
+
+static uint8_t* cpio_archive = nullptr;
+inline uint32_t hex2int(const char* s) {
+    uint32_t val = 0;
+    for (int i = 0; i < 8; i++) {
+        val <<= 4;
+        if (s[i] >= '0' && s[i] <= '9') val += s[i] - '0';
+        else if (s[i] >= 'a' && s[i] <= 'f') val += s[i] - 'a' + 10;
+        else if (s[i] >= 'A' && s[i] <= 'F') val += s[i] - 'A' + 10;
+    }
+    return val;
+}
+
+uint8_t* cpio_find_file(const char* target_name, uint32_t* out_size) {
+    if (!cpio_archive) 
+        return nullptr;
+
+    uint8_t* current = cpio_archive;
+    while (true) {
+        auto* header = (CPIOHeader*)current;
+
+        // 1. Check Magic
+        if (strncmp(header->c_magic, "070701", 6) != 0) return nullptr;
+
+        uint32_t namesize = hex2int(header->c_namesize);
+        uint32_t filesize = hex2int(header->c_filesize);
+
+        // 2. Get current filename
+        char* filename = (char*)(current + sizeof(CPIOHeader));
+
+        // 3. Check for end of archive
+        if (strcmp(filename, "TRAILER!!!") == 0) return nullptr;
+
+        // 4. Calculate alignment (CPIO Data is 4-byte aligned)
+        uint32_t head_len = sizeof(CPIOHeader) + namesize;
+        if (head_len % 4 != 0) head_len += 4 - (head_len % 4);
+        
+        uint8_t* file_data = current + head_len;
+
+        // 5. [Key] Compare filenames
+        if (strcmp(filename, target_name) == 0 || 
+           (strlen(filename) > strlen(target_name) && 
+            strcmp(filename + strlen(filename) - strlen(target_name), target_name) == 0)) 
+        {
+            if (out_size) *out_size = filesize;
+            return file_data;
+        }
+
+        // 6. Jump to next file
+        uint32_t next_offset = head_len + filesize;
+        if (next_offset % 4 != 0) next_offset += 4 - (next_offset % 4);
+        current += next_offset;
     }
 }
 
@@ -102,82 +121,31 @@ void task2_entry() {
 }
 
 Keyboard* keyboard;
-extern "C" void kernel_entry(uint32_t magic, multiboot_info_t* mbd) {
-    if (!initialized) {
-#ifdef I386
-        if (magic != 0x2BADB002)
-            return; // Not Multiboot
-        if (!(mbd->flags & (1 << 12)))
-            return; // Not in graphics mode
+extern "C" void kernel_entry(int width, int height, uint32_t framebuffer, uint8_t* cpio_start) 
+{
+    cpio_archive = cpio_start;
 
-        int w = mbd->framebuffer_width;
-        int h = mbd->framebuffer_height;        
+    Size size(width, height);
+    RGBA32* fb_ptr = (RGBA32*)(framebuffer);
 
-        cli();
-        // RTC::initialize();
-        PIC::initialize();
-        gdt_init();
-        idt_init();
-        PIT::initialize();
-#else
-        (void)magic;
-        (void)mbd;
-        int w = SCREEN_WIDTH;
-        int h = SCREEN_HEIGHT;    
-#endif        
+    dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
 
-        Size size(w, h);
-#ifdef I386    
-        RGBA32* fb_ptr = (RGBA32*)((uint32_t)mbd->framebuffer_addr);
-#else
-        RGBA32* fb_ptr = (RGBA32*)wasm_framebuffer;
-#endif        
+    keyboard = new Keyboard;
+    Process::initialize();
+    Syscall::initialize();
 
-        dbgprintf("kernel_entry: fb_ptr = %p\n", fb_ptr);
+    terminal2 = new Terminal({width/2,height/2});
+    terminal1 = new Terminal({0,0});
+    terminal1->create_window(size, fb_ptr);
+    terminal2->create_window(size, fb_ptr);
 
-        keyboard = new Keyboard;
-        Process::initialize();
-        Syscall::initialize();
+    Process::create_kernel_process("Shell", shell_entry);
+    Process::create_kernel_process("Background", task2_entry);
 
-        terminal2 = new Terminal({w/2,h/2});
-        terminal1 = new Terminal({0,0});
-        terminal1->create_window(size, fb_ptr);
-        terminal2->create_window(size, fb_ptr);
-
-        Process::create_kernel_process("Shell", shell_entry);
-        Process::create_kernel_process("Background", task2_entry);
-
-        RetainPtr<GraphicsBitmap> backing = GraphicsBitmap::create_wrapper(size, fb_ptr);
-        Rect rect { 0, 0, w, h };
-        Painter painter(*backing);
-        painter.fill_rect(rect, Color::Black);
-        terminal1->paint();
-        terminal2->paint();
-
-#ifdef I386        
-#endif
-        initialized = true;
-
-#ifdef WASM
-        canvas_init(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
-#endif        
-    }
-
-#ifdef I386
-    sti();
-    for (;;)
-        asm("hlt");
-#else
-    if (!current)
-        return;
-
-    check_js_key();    
-    if (current->m_is_first_time) {
-        current->m_is_first_time = false;
-        if (current->m_entry) {
-            current->m_entry();
-        }
-    }
-    Scheduler::timer_tick();    
-#endif
+    RetainPtr<GraphicsBitmap> backing = GraphicsBitmap::create_wrapper(size, fb_ptr);
+    Rect rect { 0, 0, width, height };
+    Painter painter(*backing);
+    painter.fill_rect(rect, Color::Black);
+    terminal1->paint();
+    terminal2->paint();
 }

@@ -44,7 +44,7 @@ _start:
     /* Push Multiboot Info Pointer (EBX) and Magic (EAX) */
     push %ebx
     push %eax    
-    call kernel_entry
+    call i386_entry
     cli
 hlt_loop:
     hlt

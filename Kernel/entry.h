@@ -1,14 +1,7 @@
 #pragma once
 
-#include "Terminal.h"
-#ifdef WASM
-const int SCREEN_WIDTH = 1024;
-const int SCREEN_HEIGHT = 768;
-// Static buffer for Wasm
-extern uint32_t wasm_framebuffer[];
-extern "C" void canvas_init(uint32_t* ptr, int width, int height);
-void check_js_key();
-#endif
-
+#include <Kernel/Terminal/Terminal.h>
 extern Terminal* terminal1;
 extern Terminal* terminal2;
+void check_js_key();
+extern "C" void kernel_entry(int width, int height, uint32_t framebuffer, uint8_t* cpio_start);

@@ -66,6 +66,7 @@ set(KERNEL_COMMON_SOURCES
 set(I386_KERNEL_ONLY_SOURCES
     arch/i386/PIC.cpp
     arch/i386/boot.S
+    arch/i386/entry.cpp
     arch/i386/switch.S
     arch/i386/i386.cpp
     arch/i386/i8253.cpp
@@ -261,7 +262,7 @@ add_custom_target(toyos_iso ALL DEPENDS ${ISO_IMAGE})
 # ------------------------------------------------------------------------------
 
 set(WASM_KERNEL_ONLY_SOURCES
-    arch/wasm/wasm_entry.cpp
+    arch/wasm/entry.cpp
 )
 
 set(WASM_SOURCES
@@ -298,7 +299,7 @@ set_source_files_properties(${KERNEL_COMMON_SOURCES} ${WASM_KERNEL_ONLY_SOURCES}
 target_link_options(toyos_wasm PRIVATE
     --target=wasm32 -nostdlib
     -Wl,--no-entry
-    -Wl,--export=kernel_entry
+    -Wl,--export=wasm_entry
     -Wl,--export=js_pending_key
     -Wl,--allow-undefined
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!

@@ -123,12 +123,29 @@
           }
         };
 
-        WebAssembly.instantiateStreaming(fetch("toyos.wasm"), importObject)
+        const [wasmRes, cpioRes] = await Promise.all([
+            fetch('toyos.wasm'),
+            fetch('initramfs.cpio')
+        ]);
+        const wasmBuffer = await wasmRes.arrayBuffer();
+        const cpioBuffer = await cpioRes.arrayBuffer();
+        
+        // Let's place it at 8MB (0x800000) mark to avoid colliding with Kernel code/stack.
+        // Make sure this area is managed/reserved in your kmalloc!
+        const CPIO_BASE_ADDR = 0x800000; 
+        const CPIO_SIZE = cpioBuffer.byteLength;        
+
+        // Write CPIO data into Wasm Memory
+        const memView = new Uint8Array(wasmMemory.buffer);
+        memView.set(new Uint8Array(cpioBuffer), CPIO_BASE_ADDR);     
+        console.log(`[JS] Loaded Initramfs to 0x${CPIO_BASE_ADDR.toString(16)}, size: ${CPIO_SIZE}`);   
+        
+        WebAssembly.instantiateStreaming(wasmBuffer, importObject)
           .then(async obj => {
             console.log("Wasm Instantiated. Starting Kernel...");
             kernelInstance = obj.instance;
             try {
-              kernelInstance.exports.kernel_entry(0, 0);
+              kernelInstance.exports.wasm_entry(CPIO_BASE_ADDR, CPIO_SIZE);
               ctx.putImageData(sharedImgData, 0, 0);
             } catch (e) {
               console.error("Kernel Error (Init):", e);
@@ -157,7 +174,7 @@
               }
               
               try {
-                kernelInstance.exports.kernel_entry(0, 0);
+                kernelInstance.exports.wasm_entry(CPIO_BASE_ADDR, CPIO_SIZE);
                 ctx.putImageData(sharedImgData, 0, 0);
               } catch (e) {
                 console.error("Kernel Error (Loop):", e);

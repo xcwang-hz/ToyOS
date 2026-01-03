@@ -126,22 +126,35 @@ void* memset(void* dest_ptr, byte c, dword n)
 //     return last;
 // }
 
-// dword strlen(const char* str)
-// {
-//     dword len = 0;
-//     while (*(str++))
-//         ++len;
-//     return len;
-// }
+dword strlen(const char* str)
+{
+    dword len = 0;
+    while (*(str++))
+        ++len;
+    return len;
+}
 
-// int strcmp(const char *s1, const char *s2)
-// {
-//     for (; *s1 == *s2; ++s1, ++s2) {
-//         if (*s1 == 0)
-//             return 0;
-//     }
-//     return *(const byte*)s1 < *(const byte*)s2 ? -1 : 1;
-// }
+int strcmp(const char *s1, const char *s2)
+{
+    for (; *s1 == *s2; ++s1, ++s2) {
+        if (*s1 == 0)
+            return 0;
+    }
+    return *(const byte*)s1 < *(const byte*)s2 ? -1 : 1;
+}
+
+int strncmp(const char* s1, const char* s2, size_t n)
+{
+    if (!n)
+        return 0;
+    do {
+        if (*s1 != *s2++)
+            return *(const unsigned char*)s1 - *(const unsigned char*)--s2;
+        if (*s1++ == 0)
+            break;
+    } while (--n);
+    return 0;
+}
 
 // char* strdup(const char *str)
 // {
