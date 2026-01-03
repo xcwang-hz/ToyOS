@@ -47,28 +47,25 @@ struct multiboot_module_t {
 
 int find_initramfs_from_multiboot(multiboot_info_t* mbd) {
     // Check flag bit 3 (mods_* fields are valid)
-    int index = -1;
     if (!(mbd->flags & (1 << 3))) {
         kprintf("Multiboot: No modules found.\n");
         return -1;
     }
 
     multiboot_module_t* mods = (multiboot_module_t*)mbd->mods_addr;
-    for (uint32_t i = 0; i < mbd->mods_count; i++) {
+    for (int i = 0; i < (int)mbd->mods_count; i++) {
         uint32_t mod_start = mods[i].mod_start;
         uint32_t mod_end = mods[i].mod_end;
         uint32_t size = mod_end - mod_start;
         char* cmdline = (char*)mods[i].string;
-        if (!strcmp(cmdline, "initramfs") || (size==0))
+        if ((strcmp(cmdline, "initramfs")!=0) || (size==0))
             continue;
-        else {
-            kprintf("CPIO module found: %s @ 0x%x (Size: %d)\n", cmdline, mod_start, size);
-            index = i;
-            break;
-        }
+
+        kprintf("CPIO module found: %s @ 0x%x (Size: %d)\n", cmdline, mod_start, size);
+        return i;
     }
 
-    return index;
+    return -1;
 }
 
 extern "C" void i386_entry(uint32_t magic, multiboot_info_t* mbd) {
@@ -76,12 +73,6 @@ extern "C" void i386_entry(uint32_t magic, multiboot_info_t* mbd) {
         return; // Not Multiboot
     if (!(mbd->flags & (1 << 12)))
         return; // Not in graphics mode
-
-    // Check flag bit 3 (mods_* fields are valid)
-    if (!(mbd->flags & (1 << 3))) {
-        kprintf("Multiboot: No modules found.\n");
-        return;
-    }
 
     multiboot_module_t* mods = (multiboot_module_t*)mbd->mods_addr;
     int index = find_initramfs_from_multiboot(mbd);

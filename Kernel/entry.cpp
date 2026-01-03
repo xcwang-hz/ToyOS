@@ -148,4 +148,7 @@ extern "C" void kernel_entry(int width, int height, uint32_t framebuffer, uint8_
     painter.fill_rect(rect, Color::Black);
     terminal1->paint();
     terminal2->paint();
+
+    uint32_t file_size = 0;
+    uint8_t* elf_data = cpio_find_file("bin/clear2", &file_size);    
 }

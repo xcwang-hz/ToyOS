@@ -140,7 +140,7 @@
         memView.set(new Uint8Array(cpioBuffer), CPIO_BASE_ADDR);     
         console.log(`[JS] Loaded Initramfs to 0x${CPIO_BASE_ADDR.toString(16)}, size: ${CPIO_SIZE}`);   
         
-        WebAssembly.instantiateStreaming(wasmBuffer, importObject)
+        WebAssembly.instantiate(wasmBuffer, importObject)
           .then(async obj => {
             console.log("Wasm Instantiated. Starting Kernel...");
             kernelInstance = obj.instance;
