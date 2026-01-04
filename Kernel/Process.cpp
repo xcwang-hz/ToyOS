@@ -513,13 +513,14 @@ Process* Process::create_user_process(const String& path)
 //     auto* process = new Process(parts.take_last(), uid, gid, parent_pid, Ring3, move(cwd), nullptr, tty);
 #ifdef WASM
     // For Wasm: Delegate to JS Host
-    js_spawn_user_process(binary_data, file_size);
+    int32_t user_proc_id = js_load_user_process(binary_data, file_size);
+    auto* process = new Process(parts.take_last(), nullptr, user_proc_id);
 #else
     // For i386: Load ELF from memory
     // Assuming you have an ELF::Loader class
     // ELF::Loader::load_from_memory(binary_data, file_size);
+    auto* process = new Process(parts.take_last(), nullptr, 0);
 #endif
-    auto* process = new Process(parts.take_last(), nullptr);
 
 //     error = process->exec(path, move(arguments), move(environment));
 //     if (error != 0) {
@@ -529,11 +530,11 @@ Process* Process::create_user_process(const String& path)
 
 //     ProcFS::the().add_process(*process);
 
-//     {
+    {
 //         InterruptDisabler disabler;
-//         g_processes->prepend(process);
-//         system.nprocess++;
-//     }
+        g_processes->prepend(process);
+        system.nprocess++;
+    }
 // #ifdef TASK_DEBUG
 //     kprintf("Process %u (%s) spawned @ %p\n", process->pid(), process->name().characters(), process->m_tss.eip);
 // #endif
@@ -582,7 +583,7 @@ Process* Process::create_user_process(const String& path)
 
 Process* Process::create_kernel_process(String&& name, void (*entry)())
 {
-    auto* process = new Process(move(name), entry);
+    auto* process = new Process(move(name), entry, 0);
 //     auto* process = new Process(move(name), (uid_t)0, (gid_t)0, (pid_t)0, Ring0);
 //     process->m_tss.eip = (dword)e;
 
@@ -601,10 +602,11 @@ Process* Process::create_kernel_process(String&& name, void (*entry)())
     return process;
 }
 
-Process::Process(String&& name, void (*entry)())
 // Process::Process(String&& name, uid_t uid, gid_t gid, pid_t ppid, RingLevel ring, RetainPtr<Inode>&& cwd, RetainPtr<Inode>&& executable, TTY* tty, Process* fork_parent)
-    : m_name(name)
-    , m_entry(entry)
+Process::Process(String&& name, void (*entry)(), int32_t user_proc_id) 
+    : m_entry(entry)
+    , m_user_proc_id(user_proc_id)
+    , m_name(name)
     , m_pid(next_pid++) // FIXME: RACE: This variable looks racy!
 //     , m_uid(uid)
 //     , m_gid(gid)

@@ -4,11 +4,20 @@
 #include <Kernel/Scheduler.h>
 #include <Kernel/Process.h>
 #include <arch/wasm/entry.h>
+#include <Kernel/Syscall.h>
 
 bool initialized = false;
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
 uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+struct SyscallParams {
+    dword func;
+    dword arg1;
+    dword arg2;
+    dword arg3;
+    dword retval;
+};
 
 extern "C" volatile int32_t wasm_pending_key = 0;
 extern "C" void wasm_entry(uint32_t ramdisk_addr, uint32_t ramdisk_size) 
@@ -24,12 +33,23 @@ extern "C" void wasm_entry(uint32_t ramdisk_addr, uint32_t ramdisk_size)
         return;
 
     if (current->m_is_first_time) {
-        current->m_is_first_time = false;
         if (current->m_entry) {
             current->m_entry();
+            current->m_is_first_time = false;
+        } 
+        else if ((current->m_user_proc_id > 0) && js_start_user_process(current->m_user_proc_id)) {
+            current->m_is_first_time = false;
         }
     }
     Scheduler::timer_tick();    
+}
+
+extern "C" dword wasm_handle(uint32_t buffer_addr)
+{
+    SyscallParams* params = (SyscallParams*)buffer_addr;
+    dword result = Syscall::handle(params->func, params->arg1, params->arg2, params->arg3);
+    params->retval = result;
+    return result;
 }
 
 void __assertion_failed(const char* msg, const char* file, unsigned line, const char* func)

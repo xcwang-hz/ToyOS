@@ -8,10 +8,6 @@
     __ENUMERATE_SYSCALL(get_arguments) \
     __ENUMERATE_SYSCALL(exit) \
 
-#ifdef WASM
-extern "C" dword wasm_handle(dword function, dword arg1, dword arg2, dword arg3);
-#endif    
-
 namespace Syscall {
 
 enum Function {
@@ -23,13 +19,17 @@ enum Function {
 
 void initialize();
 
+#ifdef WASM
+    dword handle(dword function, dword arg1, dword arg2, dword arg3);
+#endif    
+
 inline dword invoke(Function function)
 {
     dword result;
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function):"memory");
 #else 
-    result = wasm_handle(function, 0, 0, 0);
+    result = handle(function, 0, 0, 0);
 #endif
     return result;
 }
@@ -41,7 +41,7 @@ inline dword invoke(Function function, T1 arg1)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1):"memory");
 #else    
-    result = wasm_handle(function, (dword)arg1, 0, 0);
+    result = handle(function, (dword)arg1, 0, 0);
 #endif
     return result;
 }
@@ -53,7 +53,7 @@ inline dword invoke(Function function, T1 arg1, T2 arg2)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2):"memory");
 #else 
-    result = wasm_handle(function, (dword)arg1, (dword)arg2, 0);
+    result = handle(function, (dword)arg1, (dword)arg2, 0);
 #endif
     return result;
 }
@@ -65,7 +65,7 @@ inline dword invoke(Function function, T1 arg1, T2 arg2, T3 arg3)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2),"b"((dword)arg3):"memory");
 #else
-    result = wasm_handle(function, (dword)arg1, (dword)arg2, (dword)arg3);
+    result = handle(function, (dword)arg1, (dword)arg2, (dword)arg3);
 #endif
     return result;
 }

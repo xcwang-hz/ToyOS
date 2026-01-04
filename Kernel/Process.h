@@ -298,14 +298,15 @@ public:
     AsyncifyContext m_asyncify_ctx;
     bool m_is_first_time;
     void (*m_entry)() { nullptr };
+    int32_t m_user_proc_id;
 
 private:
     // friend class MemoryManager;
     // friend class Scheduler;
     // friend class Region;
-    
-    Process(String&& name, void (*entry)());
+
     // Process(String&& name, uid_t, gid_t, pid_t ppid, RingLevel, RetainPtr<Inode>&& cwd = nullptr, RetainPtr<Inode>&& executable = nullptr, TTY* = nullptr, Process* fork_parent = nullptr);
+    Process(String&& name, void (*entry)(), int32_t);
 
     void setup_kernel_stack(void (*entry)());
 

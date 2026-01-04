@@ -33,6 +33,9 @@
     const initializedContexts = new Set(); 
     let kernelInstance = null;
 
+    const userProcs = new Map();  // userProcId -> { instance, _start, name }
+    let nextUserProcId = 1;
+
     const PS2_SCANCODES = {
       "Escape": 0x01, "Digit1": 0x02, "Digit2": 0x03, "Digit3": 0x04, "Digit4": 0x05, "Digit5": 0x06, "Digit6": 0x07, "Digit7": 0x08, 
       "Digit8": 0x09, "Digit9": 0x0A, "Digit0": 0x0B, "Minus": 0x0C, "Equal": 0x0D, "Backspace": 0x0E, "Tab": 0x0F, "KeyQ": 0x10, 
@@ -161,47 +164,62 @@
               }                
             },
 
-	          js_spawn_user_process: (ptr, size) => {
-              console.log(`[JS] Spawning user process from 0x${ptr.toString(16)}, size ${size}`);
+	          js_load_user_process: (ptr, size) => {
+              console.log(`[JS] Loading user process from 0x${ptr.toString(16)}, size ${size}`);
 
               // copy out .wasm from kenel memory
               // must copy, for WebAssembly.instantiate require indepedent buffer
               const kernelMem = new Uint8Array(wasmMemory.buffer);
               const wasmBytes = kernelMem.slice(ptr, ptr + size);
-              console.log("[JS] Wasm Bytes Header:", wasmBytes.slice(0, 4)); // should be 00 61 73 6D (\0asm)
-
-              const userImports = createUserImports();
-              try 
-              {
-                if (!(wasmBytes instanceof Uint8Array))
-                  throw new Error("wasmBytes is not a Uint8Array!");
-
-                // prepare Imports for userland app
-                WebAssembly.instantiate(wasmBytes, userImports)
-                  .then(result => {
-                    console.log("[JS] Userland app instantiation success!");
-                    const instance = result.instance;
-                    
-                    // call the entry of userland app
-                    if (instance.exports._start) {
-                      try {
-                        instance.exports._start();
-                      } catch (e) {
-                        console.error("User app crashed:", e);
-                      }
-                    } else {
-                      console.error("[JS] Userland app has no _start export!");
-                    }
-                  })
-                  .catch(err => {
-                    console.error("[JS] Failed to load userland app:", err);
-                  });
-              } 
-              catch (syncErr) 
-              {
-                console.error("[JS] Synchronous Error calling instantiate:", syncErr);
+              if (wasmBytes[0] !== 0x00 || wasmBytes[1] !== 0x61 || 
+                  wasmBytes[2] !== 0x73 || wasmBytes[3] !== 0x6d) {
+                console.error("[JS] Invalid WASM magic number!");
+                return;
               }
-            }            
+
+              const userProcId = nextUserProcId++;
+              const processName = `UserProc-${userProcId}`;
+              const userImports = createUserImports(processName);
+              WebAssembly.instantiate(wasmBytes, userImports)
+                .then(result => {
+                  const instance = result.instance;
+                  if (!instance.exports._start) {
+                    console.error(`[JS] ${processName} has no _start export!`);
+                    return;
+                  }                  
+
+                  userProcs.set(userProcId, {
+                    instance: instance,
+                    _start: instance.exports._start,
+                    name: processName
+                  });                  
+                  
+                  console.log(`[JS] ${processName} loaded successfully (callback ${userProcId})`);
+
+                })
+                .catch(err => {
+                  console.error("[JS] Failed to load userland app:", err);
+                });
+              return userProcId;
+            },
+            
+            js_start_user_process: (userProcId) => {
+              const userProc = userProcs.get(userProcId);
+              if (!userProc) {
+                console.error(`[JS] Callback ${userProcId} not found!`);
+                return false;
+              }
+              
+              console.log(`[JS] Invoking ${userProc.name}`);
+              success = true;
+              try {
+                userProc._start();
+              } catch (e) {
+                console.error(`[JS] ${userProc.name} crashed:`, e);
+                success = false;
+              }              
+              return success;
+            },
           }
         };
 

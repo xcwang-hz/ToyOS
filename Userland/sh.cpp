@@ -32,7 +32,7 @@ int main(int, char**)
             printf("Hello! Testing numbers: decimal %d, hex %x\n", 123, 255);
         }
         else if (strcmp(cmd_buffer, "clear") == 0) {
-             printf("\033[2J\033[H"); 
+            printf("\033[2J\033[H"); 
         }
         else {
             printf("Unknown command: %s\n", cmd_buffer);

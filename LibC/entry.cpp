@@ -1,12 +1,10 @@
-#include <stdio.h>
-#include <string.h>
 #include <Kernel/Syscall.h>
 #include <AK/StringImpl.h>
 
 extern "C" int main(int, char**);
 
 int errno;
-// char** environ;
+char** environ;
 
 // extern "C" void __malloc_init();
 // extern "C" void __stdio_init();
@@ -26,7 +24,7 @@ extern "C" int _start()
     int rc = syscall(SC_get_arguments, &argc, &argv);
     if (rc < 0)
         goto epilogue;
-    // rc = syscall(SC_get_environment, &environ);
+    //rc = syscall(SC_get_environment, &environ);
     // if (rc < 0)
     //     goto epilogue;
     status = main(argc, argv);
