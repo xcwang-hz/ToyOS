@@ -301,7 +301,7 @@ target_link_options(toyos_wasm PRIVATE
     --target=wasm32 -nostdlib
     -Wl,--no-entry
     -Wl,--export=wasm_entry
-    -Wl,--export=wasm_handle
+    -Wl,--export=wasm_syscall_handle
     -Wl,--export=wasm_pending_key
     -Wl,--allow-undefined
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!

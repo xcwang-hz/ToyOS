@@ -78,5 +78,5 @@ extern "C" void kernel_entry(int width, int height, uint32_t framebuffer, uint8_
     terminal2->paint();
 
     CpioFileSystem::initialize(cpio_start);
-    Process::create_user_process("bin/clear");
+    Process::create_user_process("bin/sh");
 }

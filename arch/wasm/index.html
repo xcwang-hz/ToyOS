@@ -86,9 +86,11 @@
         }
       };      
 
-      function createUserImports() {
+      function createUserImports(processName) {
         return {
           env: {
+            memory: wasmMemory,
+
             // userland calls putch -> print to the same html console
             putch: (c) => {
                 const char = String.fromCharCode(c);
@@ -99,27 +101,17 @@
                 console.log(`User process exited with code ${code}`);
             },
 
-            wasm_handle: (func, arg1, arg2, arg3) => {
-              console.log(`[JS] wasm_handle called: func=${func}, arg1=${arg1}, arg2=${arg2}, arg3=${arg3}`);
-              const asyncifyState = kernelInstance.exports.asyncify_get_state();
-              console.log(`[JS] Asyncify state: ${asyncifyState}`);
-              if (asyncifyState !== 0) {
-                console.warn(`[JS] Warning: Asyncify is not in Normal state (${asyncifyState})`);
-                if (asyncifyState === 1) { // Unwinding
-                  kernelInstance.exports.asyncify_stop_unwind();
-                } else if (asyncifyState === 2) { // Rewinding
-                  kernelInstance.exports.asyncify_stop_rewind();
-                }
-              }
-              
-              try {
-                const result = kernelInstance.exports.wasm_handle(func, arg1, arg2, arg3);
-                console.log(`[JS] wasm_handle returned: ${result}`);
-                return result;
-              } catch (e) {
-                console.error(`[JS] wasm_handle error:`, e);
-                throw e;
-              }  
+            js_syscall_handle: (func, arg1, arg2, arg3) => {
+              console.log(`[${processName}] js_syscall_handle: func=${func}, args=[${arg1}, ${arg2}, ${arg3}]`);
+
+              const mem32 = new Int32Array(wasmMemory.buffer);
+              const SYSCALL_ADDR = 0x100000;
+              mem32[SYSCALL_ADDR / 4 + 0] = func;
+              mem32[SYSCALL_ADDR / 4 + 1] = arg1;
+              mem32[SYSCALL_ADDR / 4 + 2] = arg2;
+              mem32[SYSCALL_ADDR / 4 + 3] = arg3;      
+              const result = kernelInstance.exports.wasm_syscall_handle(SYSCALL_ADDR);
+              return result;  
             }
           }
         };
@@ -174,43 +166,43 @@
               if (wasmBytes[0] !== 0x00 || wasmBytes[1] !== 0x61 || 
                   wasmBytes[2] !== 0x73 || wasmBytes[3] !== 0x6d) {
                 console.error("[JS] Invalid WASM magic number!");
-                return;
+                return -1;
               }
 
               const userProcId = nextUserProcId++;
               const processName = `UserProc-${userProcId}`;
               const userImports = createUserImports(processName);
-              WebAssembly.instantiate(wasmBytes, userImports)
-                .then(result => {
-                  const instance = result.instance;
-                  if (!instance.exports._start) {
-                    console.error(`[JS] ${processName} has no _start export!`);
-                    return;
-                  }                  
+              try 
+              {
+                const module = new WebAssembly.Module(wasmBytes);
+                const instance = new WebAssembly.Instance(module, userImports);
+                if (!instance.exports._start) {
+                  console.error(`[JS] ${processName} has no _start export!`);
+                  return -1;
+                }                  
 
-                  userProcs.set(userProcId, {
-                    instance: instance,
-                    _start: instance.exports._start,
-                    name: processName
-                  });                  
-                  
-                  console.log(`[JS] ${processName} loaded successfully (callback ${userProcId})`);
-
-                })
-                .catch(err => {
-                  console.error("[JS] Failed to load userland app:", err);
-                });
+                userProcs.set(userProcId, {
+                  instance: instance,
+                  _start: instance.exports._start,
+                  name: processName
+                });                  
+                
+                console.log(`[JS] ${processName} loaded successfully`);
+              } catch (e) {
+                  console.error("[JS] Sync compilation failed:", e);
+                  return 0;
+              }
               return userProcId;
             },
             
             js_start_user_process: (userProcId) => {
               const userProc = userProcs.get(userProcId);
               if (!userProc) {
-                console.error(`[JS] Callback ${userProcId} not found!`);
+                console.error(`[JS] User process ${userProcId} not ready yet!`);
                 return false;
               }
               
-              console.log(`[JS] Invoking ${userProc.name}`);
+              console.log(`[JS] Starting ${userProc.name}`);
               success = true;
               try {
                 userProc._start();
