@@ -1,7 +1,8 @@
-#include "LibC/stdio.h"
-#include "LibC/string.h"
+#include <stdio.h>
+#include <string.h>
 
-void shell_main() {
+int main(int, char**)
+{
     char cmd_buffer[128];
     
     // Clear screen (optional, depends on terminal support)

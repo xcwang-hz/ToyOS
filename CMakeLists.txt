@@ -77,7 +77,6 @@ set(LIBC_SOURCES
     LibC/stdio.cpp
     LibC/string.cpp
     LibC/unistd.cpp
-    LibC/shell.cpp
 )
 
 # Output directories (matches build/i386 and build/wasm)
@@ -206,6 +205,7 @@ macro(add_i386_userland_prog NAME SOURCE)
 endmacro()
 add_i386_userland_prog(clear Userland/clear.cpp)
 add_i386_userland_prog(help Userland/help.cpp)
+add_i386_userland_prog(sh Userland/sh.cpp)
 
 set(INITRAMFS_I386 ${DIST_I386}/initramfs.cpio)
 set(ROOTFS_I386 ${DIST_I386}/rootfs)
@@ -218,12 +218,13 @@ add_custom_command(
     # Copy i386 executables (strip them to reduce size, keeping them as ELF)
     COMMAND llvm-strip ${DIST_USERLAND_I386}/clear -o ${ROOTFS_I386}/bin/clear
     COMMAND llvm-strip ${DIST_USERLAND_I386}/help -o ${ROOTFS_I386}/bin/help
+    COMMAND llvm-strip ${DIST_USERLAND_I386}/sh -o ${ROOTFS_I386}/bin/sh
     
     # Pack into CPIO (New ASCII Format)
     # We cd into the dir so paths inside CPIO are relative (e.g., "bin/clear")
     COMMAND sh -c "cd ${ROOTFS_I386} && find . | cpio -o -H newc > ${INITRAMFS_I386}"
     
-    DEPENDS clear_i386 help_i386
+    DEPENDS clear_i386 help_i386 sh_i386
     COMMENT "Generating i386 Initramfs (ELF)..."
     VERBATIM
 )
@@ -383,6 +384,7 @@ endmacro()
 # Instantiate wasm Userland Programs
 add_wasm_userland_prog(clear Userland/clear.cpp)
 add_wasm_userland_prog(help Userland/help.cpp)
+add_wasm_userland_prog(sh Userland/sh.cpp)
 
 set(INITRAMFS_WASM ${DIST_WASM}/initramfs.cpio)
 set(ROOTFS_WASM ${DIST_WASM}/rootfs)
@@ -394,11 +396,12 @@ add_custom_command(
     # Copy Wasm executables (Remove .wasm extension for "feeling" like native cmds)
     COMMAND ${CMAKE_COMMAND} -E copy ${DIST_USERLAND_WASM}/clear.wasm ${ROOTFS_WASM}/bin/clear
     COMMAND ${CMAKE_COMMAND} -E copy ${DIST_USERLAND_WASM}/help.wasm ${ROOTFS_WASM}/bin/help
+    COMMAND ${CMAKE_COMMAND} -E copy ${DIST_USERLAND_WASM}/sh.wasm ${ROOTFS_WASM}/bin/sh
     
     # Pack into CPIO
     COMMAND sh -c "cd ${ROOTFS_WASM} && find . | cpio -o -H newc > ${INITRAMFS_WASM}"
     
-    DEPENDS clear_wasm help_wasm
+    DEPENDS clear_wasm help_wasm sh_wasm
     COMMENT "Generating Wasm Initramfs (Wasm Modules)..."
     VERBATIM
 )
