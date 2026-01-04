@@ -40,33 +40,37 @@ asm(
 );
 #endif
 
-namespace Syscall {
-    void initialize()
-    {
+void Syscall::initialize()
+{
 #ifdef I386        
-        register_user_callable_interrupt_handler(0x80, syscall_ISR);
-        kprintf("syscall: int 0x80 handler installed\n");
+    register_user_callable_interrupt_handler(0x80, syscall_ISR);
+    kprintf("syscall: int 0x80 handler installed\n");
 #endif        
-    }
+}
+
 #ifdef I386
-    static dword handle(RegisterDump& regs, dword function, dword arg1, dword arg2, dword arg3)
+dword i386_handle(RegisterDump& regs, dword function, dword arg1, dword arg2, dword arg3)
 #else
-    dword handle(dword function, dword arg1, dword arg2, dword arg3)
+extern "C" dword wasm_handle(dword function, dword arg1, dword arg2, dword arg3)
 #endif    
+{
+    switch (function) 
     {
-        switch (function) {
         case Syscall::SC_putch:
             terminal1->on_char(((dword)arg1 & 0xff));
             terminal1->paint();
             break;
         case Syscall::SC_read:
             return Keyboard::the().read_char();
+        case Syscall::SC_get_arguments:
+            break;
+        case Syscall::SC_exit:
+            break;
         default:
             // kprintf("<%u> int0x80: Unknown function %u requested {%x, %x, %x}\n", current->pid(), function, arg1, arg2, arg3);
             break;            
-        }
-        return 0;
     }
+    return 0;
 }
 
 #ifdef I386
@@ -76,6 +80,6 @@ void syscall_entry(RegisterDump& regs)
     dword arg1 = regs.edx;
     dword arg2 = regs.ecx;
     dword arg3 = regs.ebx;
-    regs.eax = Syscall::handle(regs, function, arg1, arg2, arg3);
+    regs.eax = i386_handle(regs, function, arg1, arg2, arg3);
 }
 #endif

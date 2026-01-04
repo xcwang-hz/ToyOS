@@ -83,6 +83,26 @@
         }
       };      
 
+      function createUserImports() {
+        return {
+          env: {
+            // userland calls putch -> print to the same html console
+            putch: (c) => {
+                const char = String.fromCharCode(c);
+                // outputElement.textContent += char; 
+            },
+            // userland process exit
+            exit: (code) => {
+                console.log(`User process exited with code ${code}`);
+            },
+
+            wasm_handle: (func, arg1, arg2, arg3) => {
+              kernelInstance.exports.wasm_handle(func, arg1, arg2, arg3)
+            }
+          }
+        };
+      }      
+
       window.addEventListener('keydown', (e) => handleKeyEvent(e, true));
       window.addEventListener('keyup', (e) => handleKeyEvent(e, false));      
 
@@ -121,6 +141,48 @@
                 debugLineBuffer += String.fromCharCode(ch);
               }                
             },
+
+	          js_spawn_user_process: (ptr, size) => {
+              console.log(`[JS] Spawning user process from 0x${ptr.toString(16)}, size ${size}`);
+
+              // copy out .wasm from kenel memory
+              // must copy, for WebAssembly.instantiate require indepedent buffer
+              const kernelMem = new Uint8Array(wasmMemory.buffer);
+              const wasmBytes = kernelMem.slice(ptr, ptr + size);
+              console.log("[JS] Wasm Bytes Header:", wasmBytes.slice(0, 4)); // should be 00 61 73 6D (\0asm)
+
+              const userImports = createUserImports();
+              try 
+              {
+                if (!(wasmBytes instanceof Uint8Array))
+                  throw new Error("wasmBytes is not a Uint8Array!");
+
+                // prepare Imports for userland app
+                WebAssembly.instantiate(wasmBytes, userImports)
+                  .then(result => {
+                    console.log("[JS] Userland app instantiation success!");
+                    const instance = result.instance;
+                    
+                    // call the entry of userland app
+                    if (instance.exports._start) {
+                      try {
+                        instance.exports._start();
+                      } catch (e) {
+                        console.error("User app crashed:", e);
+                      }
+                    } else {
+                      console.error("[JS] Userland app has no _start export!");
+                    }
+                  })
+                  .catch(err => {
+                    console.error("[JS] Failed to load userland app:", err);
+                  });
+              } 
+              catch (syncErr) 
+              {
+                console.error("[JS] Synchronous Error calling instantiate:", syncErr);
+              }
+            }            
           }
         };
 
@@ -143,7 +205,7 @@
         
         WebAssembly.instantiate(wasmBuffer, importObject)
           .then(async obj => {
-            console.log("Wasm Instantiated. Starting Kernel...");
+            console.log("[JS] Wasm Instantiated. Starting Kernel...");
             kernelInstance = obj.instance;
             try {
               kernelInstance.exports.wasm_entry(CPIO_BASE_ADDR, CPIO_SIZE);

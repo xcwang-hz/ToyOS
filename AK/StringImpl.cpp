@@ -100,8 +100,7 @@ RetainPtr<StringImpl> StringImpl::create(const char* cstring, ShouldChomp should
     if (!cstring)
         return nullptr;
 
-    return nullptr;
-    // return create(cstring, strlen(cstring), shouldChomp);
+    return create(cstring, strlen(cstring), shouldChomp);
 }
 
 static inline bool isASCIILowercase(char c)

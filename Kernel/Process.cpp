@@ -487,10 +487,16 @@ Process* Process::create_user_process(const String& path)
 // Process* Process::create_user_process(const String& path, uid_t uid, gid_t gid, pid_t parent_pid, int& error, Vector<String>&& arguments, Vector<String>&& environment, TTY* tty)
 {
     uint32_t file_size = 0;
-    uint8_t* elf_data = CpioFileSystem::the().find_file(path.characters(), &file_size);
+    uint8_t* binary_data = CpioFileSystem::the().find_file(path.characters(), &file_size);
+    if (!binary_data) {
+        kprintf("Process Error: Executable '%s' not found!\n", path.characters());
+        return nullptr;
+    }    
 
-//     // FIXME: Don't split() the path twice (sys$spawn also does it...)
-//     auto parts = path.split('/');
+    kprintf("Spawning process: %s (Size: %d)\n", path.characters(), file_size);
+
+    // FIXME: Don't split() the path twice (sys$spawn also does it...)
+    auto parts = path.split('/');
 //     if (arguments.is_empty()) {
 //         arguments.append(parts.last());
 //     }
@@ -505,7 +511,15 @@ Process* Process::create_user_process(const String& path)
 //         cwd = VFS::the().root_inode();
 
 //     auto* process = new Process(parts.take_last(), uid, gid, parent_pid, Ring3, move(cwd), nullptr, tty);
-    auto* process = new Process("", nullptr);
+#ifdef WASM
+    // For Wasm: Delegate to JS Host
+    js_spawn_user_process(binary_data, file_size);
+#else
+    // For i386: Load ELF from memory
+    // Assuming you have an ELF::Loader class
+    // ELF::Loader::load_from_memory(binary_data, file_size);
+#endif
+    auto* process = new Process(parts.take_last(), nullptr);
 
 //     error = process->exec(path, move(arguments), move(environment));
 //     if (error != 0) {
