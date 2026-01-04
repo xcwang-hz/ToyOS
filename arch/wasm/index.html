@@ -102,7 +102,7 @@
             },
 
             js_syscall_handle: (func, arg1, arg2, arg3) => {
-              console.log(`[${processName}] js_syscall_handle: func=${func}, args=[${arg1}, ${arg2}, ${arg3}]`);
+              // console.log(`[${processName}] js_syscall_handle: func=${func}, args=[${arg1}, ${arg2}, ${arg3}]`);
 
               const mem32 = new Int32Array(wasmMemory.buffer);
               const SYSCALL_ADDR = 0x100000;
@@ -111,6 +111,7 @@
               mem32[SYSCALL_ADDR / 4 + 2] = arg2;
               mem32[SYSCALL_ADDR / 4 + 3] = arg3;      
               const result = kernelInstance.exports.wasm_syscall_handle(SYSCALL_ADDR);
+              ctx.putImageData(sharedImgData, 0, 0);
               return result;  
             }
           }
