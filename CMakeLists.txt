@@ -301,12 +301,15 @@ target_link_options(toyos_wasm PRIVATE
     --target=wasm32 -nostdlib
     -Wl,--no-entry
     -Wl,--export=wasm_entry
+    -Wl,--export=wasm_loop
     -Wl,--export=wasm_syscall_handle
     -Wl,--export=wasm_pending_key
+    -Wl,--export=wasm_syscall_params
     -Wl,--allow-undefined
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!
     -Wl,--import-memory
     -fuse-ld=lld
+    -Wl,--global-base=4096
 )
 
 # This command runs 'wasm-opt' to rewrite the binary for stack switching.
@@ -321,7 +324,7 @@ add_custom_command(TARGET toyos_wasm POST_BUILD
             ${WASM_OPT_FLAGS}
     
     COMMAND mv $<TARGET_FILE_DIR:toyos_wasm>/toyos_wasm.async.wasm $<TARGET_FILE:toyos_wasm>
-    COMMENT "Running Binaryen Asyncify pass..."
+    COMMENT "Running Binaryen Asyncify pass on kernel: toyos.wasm..."
     VERBATIM
 )
 
@@ -374,11 +377,24 @@ macro(add_wasm_userland_prog NAME SOURCE)
         -nostdlib
         -fuse-ld=lld
         -Wl,--entry=_start 
-        -Wl,--allow-undefined 
+        -Wl,--allow-undefined
+        -Wl,--export=wasm_user_asyncify_buffer
+        -Wl,--global-base=9437184                   # 9MB
     )
     
-    # Optional: Run Asyncify on user programs if they use blocking syscalls that yield
-    # add_custom_command(...)
+    # Run Asyncify on user programs
+    add_custom_command(TARGET ${NAME}_wasm POST_BUILD
+        COMMAND wasm-opt $<TARGET_FILE:${NAME}_wasm>
+                -o $<TARGET_FILE_DIR:${NAME}_wasm>/${NAME}.async.wasm
+                --asyncify
+                ${WASM_OPT_FLAGS}
+        
+        # Rename the processed file back to the original name
+        COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE_DIR:${NAME}_wasm>/${NAME}.async.wasm $<TARGET_FILE:${NAME}_wasm>
+        
+        COMMENT "Running Binaryen Asyncify pass on Userland App: ${NAME}..."
+        VERBATIM
+    )
 endmacro()
 
 # Instantiate wasm Userland Programs
@@ -406,8 +422,8 @@ add_custom_command(
     VERBATIM
 )
 
-add_custom_target(gen_initramfs_wasm_target DEPENDS ${INITRAMFS_WASM})
-add_dependencies(toyos_wasm gen_initramfs_wasm_target)
+add_custom_target(initramfs_wasm DEPENDS ${INITRAMFS_WASM})
+add_dependencies(toyos_wasm initramfs_wasm)
 
 # 6. Post-Build Assets Copy
 # Copies index.html and server.py to the build directory

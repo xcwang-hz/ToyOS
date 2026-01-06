@@ -55,7 +55,7 @@ struct AsyncifyContext {
     
     // Reserve enough space! 1KB is usually enough for simple kernels,
     // but if you have deep recursion, increase this.    
-    uint8_t buffer[65536];
+    uint8_t buffer[4096];
 };
 
 class Process : public InlineLinkedListNode<Process> {

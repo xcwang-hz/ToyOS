@@ -9,6 +9,15 @@ char** environ;
 // extern "C" void __malloc_init();
 // extern "C" void __stdio_init();
 
+#if WASM
+extern "C" {
+    unsigned char __asyncify_user_buffer[1024];
+    void* wasm_user_asyncify_buffer() { 
+        return &__asyncify_user_buffer[0];
+    }
+}
+#endif
+
 extern "C" int _start()
 {
     errno = 0;

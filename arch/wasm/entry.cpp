@@ -6,52 +6,62 @@
 #include <arch/wasm/entry.h>
 #include <Kernel/Syscall.h>
 
-bool initialized = false;
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
 uint32_t wasm_framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
-struct SyscallParams {
-    dword func;
-    dword arg1;
-    dword arg2;
-    dword arg3;
-    dword retval;
-};
-
 extern "C" volatile int32_t wasm_pending_key = 0;
+extern "C" volatile int32_t wasm_syscall_params[5] = {0, 0, 0, 0, 0}; // ( func, arg1, arg2, arg3, retval）
 extern "C" void wasm_entry(uint32_t ramdisk_addr, uint32_t ramdisk_size) 
 {
-    if (!initialized) {
-        kernel_entry(SCREEN_WIDTH, SCREEN_HEIGHT, (uint32_t)wasm_framebuffer, 
-            (uint8_t*)ramdisk_addr);
-        js_canvas_init(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
-        initialized = true;
-    }
-
-    if (!current)
-        return;
-
-    if (current->m_is_first_time) {
-        if (current->m_entry) {
-            current->m_entry();
-            current->m_is_first_time = false;
-        } 
-        else if (current->m_user_proc_id > 0) {
-            if (js_start_user_process(current->m_user_proc_id))
-                current->m_is_first_time = false;
-            else
-                Scheduler::yield();
-        }
-    }
-    Scheduler::timer_tick();    
+    volatile int stack_probe = 0;
+    kernel_entry(SCREEN_WIDTH, SCREEN_HEIGHT, (uint32_t)wasm_framebuffer, 
+        (uint8_t*)ramdisk_addr);
+    kprintf("[Debug] Kernel Stack Address: %p\n", &stack_probe);
+    js_canvas_init(wasm_framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-extern "C" dword wasm_syscall_handle(uint32_t buffer_addr)
+extern "C" void wasm_loop()
 {
-    SyscallParams* params = (SyscallParams*)buffer_addr;
-    dword result = js_syscall_handle(params->func, params->arg1, params->arg2, params->arg3);
-    params->retval = result;
+    while (true) 
+    {
+        if (!current)
+        {
+            Scheduler::pick_next();
+            
+            // If still no process (e.g., system just started or all blocked), 
+            // we should ideally idle. For now, we continue to retry.
+            if (!current) {
+                // Optional: You might want to yield to JS here to prevent freezing the browser
+                // if there is absolutely nothing to run (Idle state).
+                // js_context_switch(0, 0); 
+                continue; 
+            }
+        }
+
+        if (current->m_is_first_time) {
+            if (current->m_entry) {
+                current->m_entry();
+                current->m_is_first_time = false;
+            } 
+            else if (current->m_user_proc_id > 0) {
+                if (js_start_user_process(current->m_user_proc_id))
+                    current->m_is_first_time = false;
+                else
+                {
+                    Scheduler::yield();
+                    continue;
+                }
+            }
+        }
+        Scheduler::timer_tick();    
+    }
+}
+
+extern "C" dword wasm_syscall_handle()
+{
+    dword result = js_syscall_handle(wasm_syscall_params[0], wasm_syscall_params[1], wasm_syscall_params[2], wasm_syscall_params[3]);
+    wasm_syscall_params[4] = result;
     return result;
 }
 
