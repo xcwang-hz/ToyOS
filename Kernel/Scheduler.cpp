@@ -148,6 +148,7 @@ bool Scheduler::pick_next()
 //     }
 // #endif
 
+    Process* target = nullptr;
     auto* prevHead = g_processes->head();
     for (;;) {
         // Move head to tail.
@@ -158,14 +159,20 @@ bool Scheduler::pick_next()
 #ifdef SCHEDULER_DEBUG
             dbgprintf("switch to %s(%u) @ %w:%x\n", process->name().characters(), process->pid(), process->tss().cs, process->tss().eip);
 #endif
-            return context_switch(*process);
+            if (current != process) {
+                target = process;
+                break;
+            }
         }
 
         if (process == prevHead) {
             // Back at process_head, nothing wants to run. Send in the colonel!
-            return context_switch(*s_colonel_process);
+            target = s_colonel_process;
+            break;
         }
     }
+
+    return (target) ? context_switch(*target) : false;
 }
 
 bool Scheduler::yield()
@@ -210,9 +217,13 @@ bool Scheduler::yield()
 
 bool Scheduler::context_switch(Process& process)
 {
+#ifdef I386        
     if (current == &process)
         return false;
-
+#else
+    if ((current == &process) && (current != s_colonel_process))
+        return false;
+#endif
     Process* prev_process = current;    
     if (&process == s_colonel_process)
         process.set_ticks_left(1);

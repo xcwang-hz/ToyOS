@@ -150,6 +150,15 @@
               sharedImgData = new ImageData(dataArray, width, height);
             },
 
+            js_console_error: (ptr) => {
+              const mem = new Uint8Array(wasmMemory.buffer);
+              let str = "";
+              while (mem[ptr] !== 0) {
+                  str += String.fromCharCode(mem[ptr++]);
+              }
+              console.error(`[RAW LOG] ${str}`);
+            },
+
             js_context_switch: function(prevCtxPtr, nextCtxPtr) {
               // C++ requested a yield (Unwind Phase)
               if (kernelInstance.exports.asyncify_get_state() == 0) {
@@ -309,7 +318,7 @@
                   console.error("About to re-enter wasm_loop with asyncify_state =", state);
                 }
 
-                kernelInstance.exports.wasm_loop(CPIO_BASE_ADDR, CPIO_SIZE);
+                kernelInstance.exports.wasm_loop();
                 refresh();
 
                 // --- CRITICAL SAFETY CHECK ---

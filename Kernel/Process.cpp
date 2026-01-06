@@ -1642,16 +1642,16 @@ void Process::unblock()
     m_state = Process::Runnable;
 }
 
-// void Process::block(Process::State new_state)
-// {
-//     if (state() != Process::Running) {
-//         kprintf("Process::block: %s(%u) block(%u/%s) with state=%u/%s\n", name().characters(), pid(), new_state, toString(new_state), state(), toString(state()));
-//     }
-//     ASSERT(state() == Process::Running);
-//     system.nblocked++;
-//     m_was_interrupted_while_blocked = false;
-//     set_state(new_state);
-// }
+void Process::block(Process::State new_state)
+{
+    if (state() != Process::Running) {
+        kprintf("Process::block: %s(%u) block(%u/%s) with state=%u/%s\n", name().characters(), pid(), new_state, toString(new_state), state(), toString(state()));
+    }
+    ASSERT(state() == Process::Running);
+    system.nblocked++;
+    // m_was_interrupted_while_blocked = false;
+    set_state(new_state);
+}
 
 // void block(Process::State state)
 // {

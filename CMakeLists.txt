@@ -305,6 +305,7 @@ target_link_options(toyos_wasm PRIVATE
     -Wl,--export=wasm_syscall_handle
     -Wl,--export=wasm_pending_key
     -Wl,--export=wasm_syscall_params
+    -Wl,-Map=${DIST_WASM}/toyos.map
     -Wl,--allow-undefined
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!
     -Wl,--import-memory
@@ -379,7 +380,7 @@ macro(add_wasm_userland_prog NAME SOURCE)
         -Wl,--entry=_start 
         -Wl,--allow-undefined
         -Wl,--export=wasm_user_asyncify_buffer
-        -Wl,--global-base=9437184                   # 9MB
+        -Wl,-Map=${DIST_WASM}/${NAME}.map
     )
     
     # Run Asyncify on user programs

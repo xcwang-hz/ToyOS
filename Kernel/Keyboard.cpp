@@ -8,6 +8,8 @@
 #include "kprintf.h"
 #include "Keyboard.h"
 #include <Kernel/entry.h>
+#include <Process.h>
+#include <Scheduler.h>
 // #include "VirtualConsole.h"
 #include <AK/Assertions.h>
 
@@ -85,8 +87,15 @@ void Keyboard::key_state_changed(byte raw, bool pressed)
         event.flags |= Is_Press;
     if (m_client)
         m_client->on_key_pressed(event);
-    if (pressed)
+    if (pressed){
         m_queue.enqueue(event);
+        Process::for_each([](Process& process) {
+            if (process.state() == Process::BlockedRead) {
+                process.unblock();
+            }
+            return true;
+        });        
+    }
 }
 
 void Keyboard::handle_scancode(byte scancode)
@@ -171,8 +180,10 @@ Keyboard::~Keyboard()
 // }
 
 byte Keyboard::read_char() {
-    while (m_queue.is_empty())
+    while (m_queue.is_empty()) {
+        current->block(Process::BlockedRead);
         Scheduler::yield();
+    }
     
     Event event = m_queue.dequeue();
     return event.character;

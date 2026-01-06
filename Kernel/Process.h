@@ -80,7 +80,7 @@ public:
         // BeingInspected,
         BlockedSleep,
         // BlockedWait,
-        // BlockedRead,
+        BlockedRead,
         // BlockedWrite,
         // BlockedSignal,
         // BlockedSelect,
@@ -125,7 +125,7 @@ public:
     // FileDescriptor* file_descriptor(int fd);
     // const FileDescriptor* file_descriptor(int fd) const;
 
-    // void block(Process::State);
+    void block(Process::State);
     void unblock();
 
     void setWakeupTime(dword t) { m_wakeupTime = t; }
@@ -433,26 +433,26 @@ extern Process* current;
 //     Process::State m_original_state { Process::Invalid };
 // };
 
-// static inline const char* toString(Process::State state)
-// {
-//     switch (state) {
-//     case Process::Invalid: return "Invalid";
-//     case Process::Runnable: return "Runnable";
-//     case Process::Running: return "Running";
-//     case Process::Dead: return "Dead";
-//     case Process::Skip1SchedulerPass: return "Skip1";
-//     case Process::Skip0SchedulerPasses: return "Skip0";
-//     case Process::BlockedSleep: return "Sleep";
-//     case Process::BlockedWait: return "Wait";
-//     case Process::BlockedRead: return "Read";
-//     case Process::BlockedWrite: return "Write";
-//     case Process::BlockedSignal: return "Signal";
-//     case Process::BlockedSelect: return "Select";
-//     case Process::BeingInspected: return "Inspect";
-//     }
-//     ASSERT_NOT_REACHED();
-//     return nullptr;
-// }
+static inline const char* toString(Process::State state)
+{
+    switch (state) {
+    case Process::Invalid: return "Invalid";
+    case Process::Runnable: return "Runnable";
+    case Process::Running: return "Running";
+    case Process::Dead: return "Dead";
+    // case Process::Skip1SchedulerPass: return "Skip1";
+    // case Process::Skip0SchedulerPasses: return "Skip0";
+    // case Process::BlockedSleep: return "Sleep";
+    // case Process::BlockedWait: return "Wait";
+    case Process::BlockedRead: return "Read";
+    // case Process::BlockedWrite: return "Write";
+    // case Process::BlockedSignal: return "Signal";
+    // case Process::BlockedSelect: return "Select";
+    // case Process::BeingInspected: return "Inspect";
+    }
+    ASSERT_NOT_REACHED();
+    return nullptr;
+}
 
 // extern void block(Process::State);
 // extern void sleep(dword ticks);

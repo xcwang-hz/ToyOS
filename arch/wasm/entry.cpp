@@ -67,7 +67,11 @@ extern "C" dword wasm_syscall_handle()
 
 void __assertion_failed(const char* msg, const char* file, unsigned line, const char* func)
 {
-    kprintf("ASSERTION FAILED: %s\n%s:%u in %s\n", msg, file, line, func);
+    js_console_error("!!! ASSERTION FAILED !!!");
+    js_console_error(msg);
+    js_console_error(file);
+    js_console_error(func);
+    //kprintf("ASSERTION FAILED: %s\n%s:%u in %s\n", msg, file, line, func);
     __builtin_trap();
 }
 

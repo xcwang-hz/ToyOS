@@ -28,6 +28,7 @@ void* kmalloc_impl(size_t size)
     if (!s_printed) {
         kprintf("[Debug] s_heap base address: %p\n", s_heap);
         kprintf("[Debug] s_heap end address:  %p\n", s_heap + sizeof(s_heap));
+        kprintf("[Debug] s_heap_ptr base address: %p\n", &s_heap_ptr);
         s_printed = true;
     }
 
