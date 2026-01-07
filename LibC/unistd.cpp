@@ -176,6 +176,11 @@ ssize_t read(int fd, void* buf, size_t count)
 //     return p;
 // }
 
+void yield()
+{
+    syscall(SC_yield);
+}
+
 // int sleep(unsigned seconds)
 // {
 //     return syscall(SC_sleep, seconds);

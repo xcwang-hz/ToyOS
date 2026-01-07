@@ -7,6 +7,7 @@
     __ENUMERATE_SYSCALL(read) \
     __ENUMERATE_SYSCALL(get_arguments) \
     __ENUMERATE_SYSCALL(exit) \
+    __ENUMERATE_SYSCALL(yield) \
 
 #ifdef WASM
 extern "C" dword js_syscall_handle(dword function, dword arg1, dword arg2, dword arg3);

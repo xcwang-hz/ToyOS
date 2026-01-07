@@ -172,7 +172,11 @@ bool Scheduler::pick_next()
         }
     }
 
-    return (target) ? context_switch(*target) : false;
+#ifdef I386
+    return (target != current) ? context_switch(*target) : false;
+#else
+    return context_switch(*target);
+#endif    
 }
 
 bool Scheduler::yield()
@@ -217,13 +221,6 @@ bool Scheduler::yield()
 
 bool Scheduler::context_switch(Process& process)
 {
-#ifdef I386        
-    if (current == &process)
-        return false;
-#else
-    if ((current == &process) && (current != s_colonel_process))
-        return false;
-#endif
     Process* prev_process = current;    
     if (&process == s_colonel_process)
         process.set_ticks_left(1);
@@ -259,6 +256,7 @@ bool Scheduler::context_switch(Process& process)
     // 3. When this function returns, it means we have successfully 
     //    rewound (restored) the stack for the 'prev' process (which is now current).
     js_context_switch(&prev_process->m_asyncify_ctx, &process.m_asyncify_ctx);
+    js_console_error("right after js_context_switch");
     check_wasm_key();
 #else    
     asm_context_switch(&prev_process->m_kernel_stack_top, process.m_kernel_stack_top);

@@ -40,6 +40,7 @@ ssize_t read(int fd, void* buf, size_t count);
 // int fstat(int fd, struct stat* statbuf);
 // int lstat(const char* path, struct stat* statbuf);
 // int stat(const char* path, struct stat* statbuf);
+void yield();
 // int sleep(unsigned seconds);
 // int gethostname(char*, size_t);
 // ssize_t readlink(const char* path, char* buffer, size_t);

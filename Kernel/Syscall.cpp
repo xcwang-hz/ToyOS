@@ -66,6 +66,9 @@ extern "C" dword js_syscall_handle(dword function, dword arg1, dword arg2, dword
             break;
         case Syscall::SC_exit:
             break;
+        case Syscall::SC_yield:
+            Scheduler::yield();
+            break;
         default:
             // kprintf("<%u> int0x80: Unknown function %u requested {%x, %x, %x}\n", current->pid(), function, arg1, arg2, arg3);
             break;            
