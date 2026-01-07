@@ -164,7 +164,7 @@ target_compile_options(LibC_i386 PRIVATE
 )
 
 set_target_properties(LibC_i386 PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${DIST_I386}
+    ARCHIVE_OUTPUT_DIRECTORY ${DIST_USERLAND_I386}
     OUTPUT_NAME "LibC"
     PREFIX ""
 )
@@ -310,6 +310,7 @@ target_link_options(toyos_wasm PRIVATE
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!
     -Wl,--import-memory
     -fuse-ld=lld
+    -z stack-size=1048576
     -Wl,--global-base=4096
 )
 
@@ -344,7 +345,7 @@ target_compile_options(LibC_wasm PRIVATE
 )
 
 set_target_properties(LibC_wasm PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${DIST_WASM}
+    ARCHIVE_OUTPUT_DIRECTORY ${DIST_USERLAND_WASM}
     OUTPUT_NAME "LibC"
     PREFIX ""
 )
@@ -380,7 +381,8 @@ macro(add_wasm_userland_prog NAME SOURCE)
         -Wl,--entry=_start 
         -Wl,--allow-undefined
         -Wl,--export=wasm_user_asyncify_buffer
-        -Wl,-Map=${DIST_WASM}/${NAME}.map
+        -Wl,-Map=${DIST_WASM}/bin/${NAME}.map
+        -Wl,--global-base=11534336                   # 11MB
     )
     
     # Run Asyncify on user programs
@@ -429,8 +431,9 @@ add_dependencies(toyos_wasm initramfs_wasm)
 # 6. Post-Build Assets Copy
 # Copies index.html and server.py to the build directory
 add_custom_command(TARGET toyos_wasm POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/arch/wasm/index.html ${DIST_WASM}/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/arch/wasm/server.py ${DIST_WASM}/
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/arch/wasm/index.html ${DIST_WASM}/index.html
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/arch/wasm/server.py ${DIST_WASM}/server.py
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/arch/wasm/runtime.js ${DIST_WASM}/runtime.js
     COMMENT "Deploying wasm assets to ${DIST_WASM}..."
 )
 
