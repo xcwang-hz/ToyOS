@@ -11,6 +11,7 @@
 
 #ifdef WASM
 extern "C" dword js_syscall_handle(dword function, dword arg1, dword arg2, dword arg3);
+extern "C" dword js_syscall_handle_wait(dword function, dword arg1, dword arg2, dword arg3);
 #endif    
 
 namespace Syscall {
@@ -29,8 +30,11 @@ inline dword invoke(Function function)
     dword result;
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function):"memory");
-#else 
-    result = js_syscall_handle(function, 0, 0, 0);
+#else
+    if (function==Syscall::SC_yield)
+        result = js_syscall_handle_wait(function, 0, 0, 0);
+    else
+        result = js_syscall_handle(function, 0, 0, 0);
 #endif
     return result;
 }
@@ -66,7 +70,10 @@ inline dword invoke(Function function, T1 arg1, T2 arg2, T3 arg3)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2),"b"((dword)arg3):"memory");
 #else
-    result = js_syscall_handle(function, (dword)arg1, (dword)arg2, (dword)arg3);
+    if (function==Syscall::SC_read)
+        result = js_syscall_handle_wait(function, (dword)arg1, (dword)arg2, (dword)arg3);
+    else
+        result = js_syscall_handle(function, (dword)arg1, (dword)arg2, (dword)arg3);
 #endif
     return result;
 }

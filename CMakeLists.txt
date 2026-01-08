@@ -378,8 +378,8 @@ macro(add_wasm_userland_prog NAME SOURCE)
         --target=wasm32
         -nostdlib
         -fuse-ld=lld
-        -Wl,--entry=_start 
         -Wl,--allow-undefined
+        -Wl,--export=_start 
         -Wl,--export=wasm_user_asyncify_buffer
         -Wl,-Map=${DIST_WASM}/bin/${NAME}.map
         -Wl,--global-base=11534336                   # 11MB

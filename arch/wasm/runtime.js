@@ -7,6 +7,7 @@ const wasmMemory = new WebAssembly.Memory({ initial: 256, maximum: 256 });
 // -- Scheduler State --
 let nextProcessStatePtr = 0; 
 let prevProcessStatePtr = 0;   
+let sysCallStatePtr = 0;
 const processStatePtrs = new Set(); 
 
 // -- Userland Process Management --
@@ -57,6 +58,10 @@ function handleKeyEvent(e, isDown) {
         const pendingKeyAddr = kernelInstance.exports.wasm_pending_key.value; 
         const mem32 = new Int32Array(wasmMemory.buffer);
         mem32[pendingKeyAddr / 4] = codeToSend;
+
+        kernelInstance.exports.asyncify_start_rewind(sysCallStatePtr);
+        const result = kernelInstance.exports.wasm_syscall_handle();
+        result = 2;
     } else {
         console.warn(`ToyOS_JS: Unmapped key: ${e.code}`);
     }
@@ -72,8 +77,22 @@ function createUserImports(processName) {
             memory: wasmMemory, // Shared memory model (Simplification)
 
             js_syscall_handle: (func, arg1, arg2, arg3) => {
+                const syscallParamsAddr = kernelInstance.exports.wasm_syscall_params.value;
+                const mem32 = new Int32Array(wasmMemory.buffer);
+                mem32[syscallParamsAddr / 4 + 0] = func;
+                mem32[syscallParamsAddr / 4 + 1] = arg1;
+                mem32[syscallParamsAddr / 4 + 2] = arg2;
+                mem32[syscallParamsAddr / 4 + 3] = arg3;      
+                const result = kernelInstance.exports.wasm_syscall_handle();
+                const retval = mem32[syscallParamsAddr / 4 + 4];
+                refreshScreen();
+                return retval;
+            },
+
+            js_syscall_handle_wait: (func, arg1, arg2, arg3) => {
                 // Safety: If Kernel is unwinding, do not re-enter
-                if (kernelInstance.exports.asyncify_get_state() === 1) return 0;
+                if (kernelInstance.exports.asyncify_get_state() === 1) 
+                    return 0;
 
                 // 1. Marshall arguments to Kernel
                 const syscallParamsAddr = kernelInstance.exports.wasm_syscall_params.value;
@@ -88,6 +107,7 @@ function createUserImports(processName) {
 
                 // 3. Check for Asyncify Yield (Unwind)
                 if (kernelInstance.exports.asyncify_get_state() === 1) {
+                    sysCallStatePtr = prevProcessStatePtr
                     // Critical: Kernel yielded, so Userland MUST also yield (Unwind)
                     const userInstance = userProcs.get(currentRunningUserProcId).instance;
                     const stackPtr = userInstance.exports.wasm_user_asyncify_buffer();
@@ -97,7 +117,7 @@ function createUserImports(processName) {
 
                 const retval = mem32[syscallParamsAddr / 4 + 4];
                 refreshScreen();
-                return retval;  
+                return retval;
             }
         }
     };
@@ -208,6 +228,8 @@ function createKernelImports() {
 
                 try {
                     userProc._start();
+                    test = 1
+                    test = test + 1
                 } catch (e) {
                     console.error(`[JS] ${userProc.name} crashed:`, e);
                     return false;
