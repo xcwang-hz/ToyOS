@@ -51,7 +51,7 @@ void Syscall::initialize()
 #ifdef I386
 dword i386_handle(RegisterDump& regs, dword function, dword arg1, dword arg2, dword arg3)
 #else
-extern "C" dword js_syscall_handle(dword function, dword arg1, dword arg2, dword arg3)
+extern "C" dword internal_wasm_handle(dword function, dword arg1, dword arg2, dword arg3)
 #endif    
 {
     switch (function) 

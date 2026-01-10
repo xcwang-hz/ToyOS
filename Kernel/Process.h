@@ -296,7 +296,6 @@ public:
     Process* m_next { nullptr };
 
     AsyncifyContext m_asyncify_ctx;
-    bool m_is_first_time;
     void (*m_entry)() { nullptr };
     int32_t m_user_proc_id;
 

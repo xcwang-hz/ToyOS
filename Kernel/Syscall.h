@@ -10,8 +10,10 @@
     __ENUMERATE_SYSCALL(yield) \
 
 #ifdef WASM
+extern "C" volatile int32_t wasm_syscall_params[];
 extern "C" dword js_syscall_handle(dword function, dword arg1, dword arg2, dword arg3);
 extern "C" dword js_syscall_handle_wait(dword function, dword arg1, dword arg2, dword arg3);
+extern "C" dword internal_wasm_handle(dword function, dword arg1, dword arg2, dword arg3);
 #endif    
 
 namespace Syscall {
@@ -25,16 +27,31 @@ enum Function {
 
 void initialize();
 
+#ifdef WASM
+inline dword syscall_handle(dword function, dword arg1, dword arg2, dword arg3)
+{
+    if ((function==Syscall::SC_yield) || (function==Syscall::SC_read)) {
+        wasm_syscall_params[0] = 0;
+        dword result = 0;
+        while (true) {
+            result = js_syscall_handle_wait(function, arg1, arg2, arg3);
+            if (wasm_syscall_params[0])
+                return wasm_syscall_params[4];
+        }
+        return result;
+    }
+    else
+        return js_syscall_handle(function, arg1, arg2, arg3);    
+}
+#endif
+
 inline dword invoke(Function function)
 {
     dword result;
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function):"memory");
 #else
-    if (function==Syscall::SC_yield)
-        result = js_syscall_handle_wait(function, 0, 0, 0);
-    else
-        result = js_syscall_handle(function, 0, 0, 0);
+    result = syscall_handle(function, 0, 0, 0);
 #endif
     return result;
 }
@@ -46,7 +63,7 @@ inline dword invoke(Function function, T1 arg1)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1):"memory");
 #else    
-    result = js_syscall_handle(function, (dword)arg1, 0, 0);
+    result = syscall_handle(function, (dword)arg1, 0, 0);
 #endif
     return result;
 }
@@ -58,7 +75,7 @@ inline dword invoke(Function function, T1 arg1, T2 arg2)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2):"memory");
 #else 
-    result = js_syscall_handle(function, (dword)arg1, (dword)arg2, 0);
+    result = syscall_handle(function, (dword)arg1, (dword)arg2, 0);
 #endif
     return result;
 }
@@ -70,10 +87,7 @@ inline dword invoke(Function function, T1 arg1, T2 arg2, T3 arg3)
 #ifdef I386    
     asm volatile("int $0x80":"=a"(result):"a"(function),"d"((dword)arg1),"c"((dword)arg2),"b"((dword)arg3):"memory");
 #else
-    if (function==Syscall::SC_read)
-        result = js_syscall_handle_wait(function, (dword)arg1, (dword)arg2, (dword)arg3);
-    else
-        result = js_syscall_handle(function, (dword)arg1, (dword)arg2, (dword)arg3);
+    result = syscall_handle(function, (dword)arg1, (dword)arg2, (dword)arg3);
 #endif
     return result;
 }

@@ -619,8 +619,6 @@ Process::Process(String&& name, void (*entry)(), int32_t user_proc_id)
 //     , m_tty(tty)
 //     , m_ppid(ppid)
 {
-    m_is_first_time = true;
-
 //     memset(&m_fpu_state, 0, sizeof(FPUState));
 
 //     m_gids.set(m_gid);

@@ -329,7 +329,6 @@ void Scheduler::initialize()
     // initialize_redirection();
     s_colonel_process = Process::create_kernel_process("colonel", nullptr);
     s_colonel_process->set_ticks_left(1);
-    s_colonel_process->m_is_first_time = false;
     current = s_colonel_process;
     current->set_state(Process::Running);
 

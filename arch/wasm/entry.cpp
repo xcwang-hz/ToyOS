@@ -39,28 +39,17 @@ extern "C" void wasm_loop()
             }
         }
 
-        if (current->m_is_first_time) {
-            if (current->m_entry) {
-                current->m_entry();
-                current->m_is_first_time = false;
-            } 
-            else if (current->m_user_proc_id > 0) {
-                if (js_start_user_process(current->m_user_proc_id))
-                    current->m_is_first_time = false;
-                else
-                {
-                    Scheduler::yield();
-                    continue;
-                }
-            }
-        }
-        Scheduler::timer_tick();    
+        if (current->m_entry)
+            current->m_entry();
+        else if (current->m_user_proc_id > 0)
+            js_start_user_process(current->m_user_proc_id);
+        Scheduler::timer_tick();
     }
 }
 
 extern "C" dword wasm_syscall_handle()
 {
-    dword result = js_syscall_handle(wasm_syscall_params[0], wasm_syscall_params[1], wasm_syscall_params[2], wasm_syscall_params[3]);
+    dword result = internal_wasm_handle(wasm_syscall_params[0], wasm_syscall_params[1], wasm_syscall_params[2], wasm_syscall_params[3]);
     wasm_syscall_params[4] = result;
     return result;
 }

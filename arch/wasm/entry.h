@@ -7,5 +7,4 @@ extern "C" void js_console_error(const char* msg);        // directly report to 
 extern "C" void js_debug_char(char c);                  // called by dbgprintf/kprintf
 extern "C" int js_load_user_process(const uint8_t* ptr, uint32_t size);
 extern "C" bool js_start_user_process(int32_t user_proc_id);
-extern "C" dword js_syscall_handle(dword function, dword arg1, dword arg2, dword arg3);
 void check_wasm_key();

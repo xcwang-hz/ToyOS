@@ -380,7 +380,9 @@ macro(add_wasm_userland_prog NAME SOURCE)
         -fuse-ld=lld
         -Wl,--allow-undefined
         -Wl,--export=_start 
-        -Wl,--export=wasm_user_asyncify_buffer
+        -Wl,--export=wasm_user_asyncify_ctx
+        -Wl,--export=wasm_syscall_params
+        -Wl,--import-memory
         -Wl,-Map=${DIST_WASM}/bin/${NAME}.map
         -Wl,--global-base=11534336                   # 11MB
     )

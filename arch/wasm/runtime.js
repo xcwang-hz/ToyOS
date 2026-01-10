@@ -61,7 +61,16 @@ function handleKeyEvent(e, isDown) {
 
         kernelInstance.exports.asyncify_start_rewind(sysCallStatePtr);
         const result = kernelInstance.exports.wasm_syscall_handle();
-        result = 2;
+
+        const userInstance = userProcs.get(currentRunningUserProcId).instance;
+        const syscallParamsAddr = userInstance.exports.wasm_syscall_params.value;
+        const mem32_2 = new Int32Array(wasmMemory.buffer);
+        mem32_2[syscallParamsAddr / 4 + 0] = 1;
+        mem32_2[syscallParamsAddr / 4 + 4] = result;
+
+        const stackPtr = userInstance.exports.wasm_user_asyncify_ctx();
+        userInstance.exports.asyncify_start_rewind(stackPtr);
+        userInstance.exports._start();
     } else {
         console.warn(`ToyOS_JS: Unmapped key: ${e.code}`);
     }
@@ -90,10 +99,6 @@ function createUserImports(processName) {
             },
 
             js_syscall_handle_wait: (func, arg1, arg2, arg3) => {
-                // Safety: If Kernel is unwinding, do not re-enter
-                if (kernelInstance.exports.asyncify_get_state() === 1) 
-                    return 0;
-
                 // 1. Marshall arguments to Kernel
                 const syscallParamsAddr = kernelInstance.exports.wasm_syscall_params.value;
                 const mem32 = new Int32Array(wasmMemory.buffer);
@@ -102,22 +107,24 @@ function createUserImports(processName) {
                 mem32[syscallParamsAddr / 4 + 2] = arg2;
                 mem32[syscallParamsAddr / 4 + 3] = arg3;      
                 
-                // 2. Execute Kernel Syscall Handler
-                const result = kernelInstance.exports.wasm_syscall_handle();
-
-                // 3. Check for Asyncify Yield (Unwind)
-                if (kernelInstance.exports.asyncify_get_state() === 1) {
+                let state = kernelInstance.exports.asyncify_get_state();
+                if (state === 0)
+                {
+                    kernelInstance.exports.wasm_syscall_handle();
                     sysCallStatePtr = prevProcessStatePtr
-                    // Critical: Kernel yielded, so Userland MUST also yield (Unwind)
-                    const userInstance = userProcs.get(currentRunningUserProcId).instance;
-                    const stackPtr = userInstance.exports.wasm_user_asyncify_buffer();
-                    userInstance.exports.asyncify_start_unwind(stackPtr);
-                    return 0; // Return value ignored during unwind
-                }              
+                }
 
-                const retval = mem32[syscallParamsAddr / 4 + 4];
-                refreshScreen();
-                return retval;
+                const userInstance = userProcs.get(currentRunningUserProcId).instance;
+                const stackPtr = userInstance.exports.wasm_user_asyncify_ctx();
+                if (userInstance.exports.asyncify_get_state() == 0) {
+                    console.log(`[JS] Syscall pause: Save to ${stackPtr}`);
+                    userInstance.exports.asyncify_start_unwind(stackPtr);
+                } else {
+                    // Kernel is resuming (Rewind Stop Phase)
+                    console.log(`[JS] Syacall finished.`);
+                    userInstance.exports.asyncify_stop_rewind();
+                }
+                return 0;
             }
         }
     };
@@ -195,13 +202,14 @@ function createKernelImports() {
                     
                     if (!instance.exports._start) throw new Error("No _start export");
 
-                    const stackPtr = instance.exports.wasm_user_asyncify_buffer();
+                    const stackPtr = instance.exports.wasm_user_asyncify_ctx();
                     console.log(`[JS] [Debug] User Stack State Ptr: 0x${stackPtr.toString(16)}`);                
                     
                     userProcs.set(userProcId, {
                         instance: instance,
                         _start: instance.exports._start,
-                        name: processName
+                        name: processName,
+                        firstTime: true
                     });                  
                     console.log(`[JS] ${processName} loaded successfully`);
                 } catch (e) {
@@ -216,20 +224,17 @@ function createKernelImports() {
                 if (!userProc) return false;
                 
                 currentRunningUserProcId = userProcId;
-                console.log(`[JS] Starting ${userProc.name}`);
-
-                // Check if we need to Rewind Userland (if returning from a syscall yield)
-                const kernelState = kernelInstance.exports.asyncify_get_state();
-                if (kernelState === 2) { 
-                    console.log(`[JS] Rewinding Userland ${userProc.name}...`);
-                    const stackPtr = userProc.instance.exports.wasm_user_asyncify_buffer();
+                if (userProc.firstTime) {
+                    userProc.firstTime = false;
+                    console.log(`[JS] Starting ${userProc.name}`);
+                }
+                else {
+                    const stackPtr = userProc.instance.exports.wasm_user_asyncify_ctx();
                     userProc.instance.exports.asyncify_start_rewind(stackPtr);
-                }              
+                }
 
                 try {
                     userProc._start();
-                    test = 1
-                    test = test + 1
                 } catch (e) {
                     console.error(`[JS] ${userProc.name} crashed:`, e);
                     return false;
