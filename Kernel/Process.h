@@ -154,12 +154,12 @@ public:
     // gid_t sys$getgid();
     // uid_t sys$geteuid();
     // gid_t sys$getegid();
-    // pid_t sys$getpid();
+    pid_t sys$getpid();
     // pid_t sys$getppid();
     // mode_t sys$umask(mode_t);
     // int sys$open(const char* path, int options, mode_t mode = 0);
     // int sys$close(int fd);
-    // ssize_t sys$read(int fd, void* outbuf, size_t nread);
+    ssize_t sys$read(int fd, void* outbuf, size_t nread);
     // ssize_t sys$write(int fd, const void*, size_t);
     // int sys$fstat(int fd, stat*);
     // int sys$lstat(const char*, stat*);

@@ -1,3 +1,4 @@
+#include "Keyboard.h"
 #include "types.h"
 #include "Process.h"
 #include "kmalloc.h"
@@ -513,7 +514,7 @@ Process* Process::create_user_process(const String& path)
 //     auto* process = new Process(parts.take_last(), uid, gid, parent_pid, Ring3, move(cwd), nullptr, tty);
 #ifdef WASM
     // For Wasm: Delegate to JS Host
-    int32_t user_proc_id = js_load_user_process(binary_data, file_size);
+    int32_t user_proc_id = js_load_user_process(binary_data, file_size, next_pid);
     auto* process = new Process(parts.take_last(), nullptr, user_proc_id);
 #else
     // For i386: Load ELF from memory
@@ -1146,8 +1147,9 @@ void Process::setup_kernel_stack(void (*entry)())
 //     return nwritten;
 // }
 
-// ssize_t Process::sys$read(int fd, void* outbuf, size_t nread)
-// {
+ssize_t Process::sys$read(int fd, void* outbuf, size_t nread)
+{
+    return Keyboard::the().read_char(m_pid);
 //     if (!validate_write(outbuf, nread))
 //         return -EFAULT;
 // #ifdef DEBUG_IO
@@ -1174,7 +1176,7 @@ void Process::setup_kernel_stack(void (*entry)())
 //     dbgprintf("%s(%u) Process::sys$read: nread=%u\n", name().characters(), pid(), nread);
 // #endif
 //     return nread;
-// }
+}
 
 // int Process::sys$close(int fd)
 // {
@@ -1534,10 +1536,10 @@ void Process::setup_kernel_stack(void (*entry)())
 //     return m_egid;
 // }
 
-// pid_t Process::sys$getpid()
-// {
-//     return m_pid;
-// }
+pid_t Process::sys$getpid()
+{
+    return m_pid;
+}
 
 // pid_t Process::sys$getppid()
 // {

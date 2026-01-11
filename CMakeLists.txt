@@ -305,6 +305,7 @@ target_link_options(toyos_wasm PRIVATE
     -Wl,--export=wasm_syscall_handle
     -Wl,--export=wasm_pending_key
     -Wl,--export=wasm_syscall_params
+    -Wl,--export=wasm_set_current
     -Wl,-Map=${DIST_WASM}/toyos.map
     -Wl,--allow-undefined
     # [CRITICAL FIX] Tell the linker: Import memory from JS, do not create it yourself!

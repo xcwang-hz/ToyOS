@@ -49,10 +49,10 @@ extern "C" {
 //     return syscall(SC_getegid);
 // }
 
-// pid_t getpid()
-// {
-//     return syscall(SC_getpid);
-// }
+pid_t getpid()
+{
+    return syscall(SC_getpid);
+}
 
 // pid_t getppid()
 // {

@@ -179,7 +179,7 @@ Keyboard::~Keyboard()
 //     return !m_queue.is_empty();
 // }
 
-byte Keyboard::read_char() {
+byte Keyboard::read_char(int pid) {
     while (m_queue.is_empty()) {
         current->block(Process::BlockedRead);
         Scheduler::yield();

@@ -10,6 +10,7 @@ char** environ;
 // extern "C" void __stdio_init();
 
 #if WASM
+pid_t pid;
 extern "C" volatile int32_t wasm_syscall_params[5] = {0, 1, 0, 0, 0}; // ( ready, arg1, arg2, arg3, retval）
 struct AsyncifyContext {
     // Defines the start and end of the buffer where Asyncify saves data.
@@ -41,6 +42,7 @@ extern "C" int _start()
     // StringImpl::initialize_globals();
 
 #if WASM
+    pid = syscall(SC_getpid);
     asyncify_ctx.stack_start = asyncify_ctx.buffer;
     asyncify_ctx.stack_end = asyncify_ctx.buffer + sizeof(asyncify_ctx.buffer);
 #endif

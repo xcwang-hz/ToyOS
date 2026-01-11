@@ -11,7 +11,7 @@ let sysCallStatePtr = 0;
 const processStatePtrs = new Set(); 
 
 // -- Userland Process Management --
-// userProcId -> { instance, _start, name }
+// userProcId -> { instance, _start, name, pid, first }
 const userProcs = new Map();  
 let nextUserProcId = 1;
 let currentRunningUserProcId = 0;
@@ -59,12 +59,15 @@ function handleKeyEvent(e, isDown) {
         const mem32 = new Int32Array(wasmMemory.buffer);
         mem32[pendingKeyAddr / 4] = codeToSend;
 
+        const userProc = userProcs.get(currentRunningUserProcId);
+        kernelInstance.exports.wasm_set_current(userProc.pid);
+
         console.warn(`[JS] ${e.code} pressed`);
         console.log(`[JS] Rewinding existing process for syscall: ${sysCallStatePtr}`);
         kernelInstance.exports.asyncify_start_rewind(sysCallStatePtr);
         const result = kernelInstance.exports.wasm_syscall_handle();
 
-        const userInstance = userProcs.get(currentRunningUserProcId).instance;
+        const userInstance = userProc.instance;
         const syscallParamsAddr = userInstance.exports.wasm_syscall_params.value;
         const mem32_2 = new Int32Array(wasmMemory.buffer);
         mem32_2[syscallParamsAddr / 4 + 0] = 1;
@@ -104,25 +107,25 @@ function createUserImports(processName) {
             },
 
             js_syscall_handle_wait: (func, arg1, arg2, arg3) => {
-                // 1. Marshall arguments to Kernel
-                const syscallParamsAddr = kernelInstance.exports.wasm_syscall_params.value;
-                const mem32 = new Int32Array(wasmMemory.buffer);
-                mem32[syscallParamsAddr / 4 + 0] = func;
-                mem32[syscallParamsAddr / 4 + 1] = arg1;
-                mem32[syscallParamsAddr / 4 + 2] = arg2;
-                mem32[syscallParamsAddr / 4 + 3] = arg3;      
-                
-                let state = kernelInstance.exports.asyncify_get_state();
-                if (state === 0)
-                {
-                    kernelInstance.exports.wasm_syscall_handle();
-                    sysCallStatePtr = prevProcessStatePtr
-                    console.log(`[JS] Saved to ${sysCallStatePtr} for syscall`);
-                }
-
                 const userInstance = userProcs.get(currentRunningUserProcId).instance;
                 const stackPtr = userInstance.exports.wasm_user_asyncify_ctx();
                 if (userInstance.exports.asyncify_get_state() == 0) {
+                    // 1. Marshall arguments to Kernel
+                    const syscallParamsAddr = kernelInstance.exports.wasm_syscall_params.value;
+                    const mem32 = new Int32Array(wasmMemory.buffer);
+                    mem32[syscallParamsAddr / 4 + 0] = func;
+                    mem32[syscallParamsAddr / 4 + 1] = arg1;
+                    mem32[syscallParamsAddr / 4 + 2] = arg2;
+                    mem32[syscallParamsAddr / 4 + 3] = arg3;      
+                    
+                    let state = kernelInstance.exports.asyncify_get_state();
+                    if (state === 0)
+                    {
+                        kernelInstance.exports.wasm_syscall_handle();
+                        sysCallStatePtr = prevProcessStatePtr
+                        console.log(`[JS] Saved to ${sysCallStatePtr} for syscall`);
+                    }
+
                     console.log(`[JS] UserProc-${currentRunningUserProcId} paused for syscall: Save to ${stackPtr}`);
                     userInstance.exports.asyncify_start_unwind(stackPtr);
                 } else {
@@ -186,7 +189,7 @@ function createKernelImports() {
             },
 
             // --- Userland Loader ---
-            js_load_user_process: (ptr, size) => {
+            js_load_user_process: (ptr, size, pid) => {
                 console.log(`[JS] Loading user process from 0x${ptr.toString(16)}, size ${size}`);
                 
                 // Copy Wasm bytes from Kernel Heap to a temporary buffer
@@ -215,6 +218,7 @@ function createKernelImports() {
                         instance: instance,
                         _start: instance.exports._start,
                         name: processName,
+                        pid: pid,
                         firstTime: true
                     });                  
                     console.log(`[JS] ${processName} loaded successfully`);

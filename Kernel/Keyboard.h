@@ -39,7 +39,7 @@ public:
     void set_client(KeyboardClient* client) { m_client = client; }
 
     // // ^CharacterDevice
-    byte read_char();
+    byte read_char(int pid);
     // virtual ssize_t read(Process&, byte* buffer, size_t) override;
     // virtual bool can_read(Process&) const override;
     // virtual ssize_t write(Process&, const byte* buffer, size_t) override;

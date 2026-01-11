@@ -6,6 +6,7 @@
     __ENUMERATE_SYSCALL(putch) \
     __ENUMERATE_SYSCALL(read) \
     __ENUMERATE_SYSCALL(get_arguments) \
+    __ENUMERATE_SYSCALL(getpid) \
     __ENUMERATE_SYSCALL(exit) \
     __ENUMERATE_SYSCALL(yield) \
 

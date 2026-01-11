@@ -54,6 +54,20 @@ extern "C" dword wasm_syscall_handle()
     return result;
 }
 
+extern "C" void wasm_set_current(int pid)
+{
+    for (auto* process = g_processes->head(); process;) {
+        auto* next_process = process->next();
+        if (process->pid() == pid)
+        {
+            current = process;
+            return;
+        }
+
+        process = next_process;        
+    }    
+}
+
 void __assertion_failed(const char* msg, const char* file, unsigned line, const char* func)
 {
     js_console_error("!!! ASSERTION FAILED !!!");

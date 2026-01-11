@@ -1,4 +1,4 @@
-// #include "Process.h"
+#include "Process.h"
 #include "Syscall.h"
 // #include "Console.h"
 #include "Scheduler.h"
@@ -61,9 +61,11 @@ extern "C" dword internal_wasm_handle(dword function, dword arg1, dword arg2, dw
             terminal1->paint();
             break;
         case Syscall::SC_read:
-            return Keyboard::the().read_char();
+            return current->sys$read((int)arg1, (void*)arg2, (size_t)arg3);
         case Syscall::SC_get_arguments:
             break;
+        case Syscall::SC_getpid:
+            return current->sys$getpid();
         case Syscall::SC_exit:
             break;
         case Syscall::SC_yield:
