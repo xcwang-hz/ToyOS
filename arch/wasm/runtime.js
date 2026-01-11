@@ -59,6 +59,8 @@ function handleKeyEvent(e, isDown) {
         const mem32 = new Int32Array(wasmMemory.buffer);
         mem32[pendingKeyAddr / 4] = codeToSend;
 
+        console.warn(`[JS] ${e.code} pressed`);
+        console.log(`[JS] Rewinding existing process for syscall: ${sysCallStatePtr}`);
         kernelInstance.exports.asyncify_start_rewind(sysCallStatePtr);
         const result = kernelInstance.exports.wasm_syscall_handle();
 
@@ -69,8 +71,11 @@ function handleKeyEvent(e, isDown) {
         mem32_2[syscallParamsAddr / 4 + 4] = result;
 
         const stackPtr = userInstance.exports.wasm_user_asyncify_ctx();
+        console.log(`[JS] Rewinding for UserProc-${currentRunningUserProcId}: ${stackPtr}`);
         userInstance.exports.asyncify_start_rewind(stackPtr);
+        console.warn(`[JS] Re-entering _start`);
         userInstance.exports._start();
+        console.warn(`[JS] Leaving handleKeyEvent`);
     } else {
         console.warn(`ToyOS_JS: Unmapped key: ${e.code}`);
     }
@@ -112,16 +117,17 @@ function createUserImports(processName) {
                 {
                     kernelInstance.exports.wasm_syscall_handle();
                     sysCallStatePtr = prevProcessStatePtr
+                    console.log(`[JS] Saved to ${sysCallStatePtr} for syscall`);
                 }
 
                 const userInstance = userProcs.get(currentRunningUserProcId).instance;
                 const stackPtr = userInstance.exports.wasm_user_asyncify_ctx();
                 if (userInstance.exports.asyncify_get_state() == 0) {
-                    console.log(`[JS] Syscall pause: Save to ${stackPtr}`);
+                    console.log(`[JS] UserProc-${currentRunningUserProcId} paused for syscall: Save to ${stackPtr}`);
                     userInstance.exports.asyncify_start_unwind(stackPtr);
                 } else {
                     // Kernel is resuming (Rewind Stop Phase)
-                    console.log(`[JS] Syacall finished.`);
+                    console.log(`[JS] UserProc-${currentRunningUserProcId} resumed from Syacall finished.`);
                     userInstance.exports.asyncify_stop_rewind();
                 }
                 return 0;
@@ -229,6 +235,7 @@ function createKernelImports() {
                     console.log(`[JS] Starting ${userProc.name}`);
                 }
                 else {
+                    console.log(`[JS] Rewinding for UserProc-${currentRunningUserProcId}: ${stackPtr}`);
                     const stackPtr = userProc.instance.exports.wasm_user_asyncify_ctx();
                     userProc.instance.exports.asyncify_start_rewind(stackPtr);
                 }
@@ -304,7 +311,7 @@ async function initOS()
 
     // 2. Setup Input
     window.addEventListener('keydown', (e) => handleKeyEvent(e, true));
-    window.addEventListener('keyup', (e) => handleKeyEvent(e, false));      
+    // window.addEventListener('keyup', (e) => handleKeyEvent(e, false));      
 
     try {
         // 3. Load Assets
