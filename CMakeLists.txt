@@ -70,6 +70,8 @@ set(I386_KERNEL_ONLY_SOURCES
     arch/i386/entry.cpp
     arch/i386/i386.cpp
     arch/i386/i8253.cpp
+    Kernel/ELFImage.cpp
+    Kernel/ELFLoader.cpp
 )
 
 set(LIBC_SOURCES
@@ -216,9 +218,9 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E make_directory ${ROOTFS_I386}/bin
     
     # Copy i386 executables (strip them to reduce size, keeping them as ELF)
-    COMMAND llvm-strip ${DIST_USERLAND_I386}/clear -o ${ROOTFS_I386}/bin/clear
-    COMMAND llvm-strip ${DIST_USERLAND_I386}/help -o ${ROOTFS_I386}/bin/help
-    COMMAND llvm-strip ${DIST_USERLAND_I386}/sh -o ${ROOTFS_I386}/bin/sh
+    COMMAND ${CMAKE_COMMAND} -E copy ${DIST_USERLAND_I386}/clear ${ROOTFS_I386}/bin/clear
+    COMMAND ${CMAKE_COMMAND} -E copy ${DIST_USERLAND_I386}/help ${ROOTFS_I386}/bin/help
+    COMMAND ${CMAKE_COMMAND} -E copy ${DIST_USERLAND_I386}/sh ${ROOTFS_I386}/bin/sh
     
     # Pack into CPIO (New ASCII Format)
     # We cd into the dir so paths inside CPIO are relative (e.g., "bin/clear")

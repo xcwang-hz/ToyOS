@@ -22,6 +22,8 @@
 // #include "MasterPTY.h"
 #ifdef I386
 #include <arch/i386/i386.h>
+#include <Kernel/ELFImage.h>
+#include <Kernel/ELFLoader.h>
 #else
 #include <arch/wasm/entry.h>
 #endif
@@ -517,10 +519,11 @@ Process* Process::create_user_process(const String& path)
     int32_t user_proc_id = js_load_user_process(binary_data, file_size, next_pid);
     auto* process = new Process(parts.take_last(), nullptr, user_proc_id);
 #else
-    // For i386: Load ELF from memory
-    // Assuming you have an ELF::Loader class
-    // ELF::Loader::load_from_memory(binary_data, file_size);
-    auto* process = new Process(parts.take_last(), nullptr, 0);
+    ELFLoader* loader = new ELFLoader(binary_data);
+    loader->load();
+    uint32_t entry_address = loader->entry().get();
+    void (*entry)() = reinterpret_cast<void (*)()>(entry_address);
+    auto* process = new Process(parts.take_last(), entry, 0);
 #endif
 
 //     error = process->exec(path, move(arguments), move(environment));
