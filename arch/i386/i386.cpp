@@ -6,11 +6,11 @@
 #include "StdLib.h"
 #include "TSS.h"
 #include "Assertions.h"
-// #include "Process.h"
+#include "Process.h"
 // #include "MemoryManager.h"
 #include "IRQHandler.h"
 #include "PIC.h"
-// #include "Scheduler.h"
+#include "Scheduler.h"
 
 //#define PAGE_FAULT_DEBUG
 
@@ -127,37 +127,37 @@ asm(
     "    iret \n"                 // Pops EIP, CS, EFLAGS, ESP, SS -> Switch to Ring 3
 );
 
-// #define EH_ENTRY(ec) \
-// extern "C" void exception_ ## ec ## _handler(RegisterDumpWithExceptionCode&); \
-// extern "C" void exception_ ## ec ## _entry(); \
-// asm( \
-//     ".globl exception_" # ec "_entry\n" \
-//     "exception_" # ec "_entry: \n" \
-//     "    pusha\n" \
-//     "    pushw %ds\n" \
-//     "    pushw %es\n" \
-//     "    pushw %fs\n" \
-//     "    pushw %gs\n" \
-//     "    pushw %ss\n" \
-//     "    pushw %ss\n" \
-//     "    pushw %ss\n" \
-//     "    pushw %ss\n" \
-//     "    pushw %ss\n" \
-//     "    popw %ds\n" \
-//     "    popw %es\n" \
-//     "    popw %fs\n" \
-//     "    popw %gs\n" \
-//     "    mov %esp, %eax\n" \
-//     "    call exception_" # ec "_handler\n" \
-//     "    popw %gs\n" \
-//     "    popw %gs\n" \
-//     "    popw %fs\n" \
-//     "    popw %es\n" \
-//     "    popw %ds\n" \
-//     "    popa\n" \
-//     "    add $0x4, %esp\n" \
-//     "    iret\n" \
-// );
+#define EH_ENTRY(ec) \
+extern "C" void exception_ ## ec ## _handler(RegisterDumpWithExceptionCode&); \
+extern "C" void exception_ ## ec ## _entry(); \
+asm( \
+    ".globl exception_" # ec "_entry\n" \
+    "exception_" # ec "_entry: \n" \
+    "    pusha\n" \
+    "    pushw %ds\n" \
+    "    pushw %es\n" \
+    "    pushw %fs\n" \
+    "    pushw %gs\n" \
+    "    pushw %ss\n" \
+    "    pushw %ss\n" \
+    "    pushw %ss\n" \
+    "    pushw %ss\n" \
+    "    pushw %ss\n" \
+    "    popw %ds\n" \
+    "    popw %es\n" \
+    "    popw %fs\n" \
+    "    popw %gs\n" \
+    "    mov %esp, %eax\n" \
+    "    call exception_" # ec "_handler\n" \
+    "    popw %gs\n" \
+    "    popw %gs\n" \
+    "    popw %fs\n" \
+    "    popw %es\n" \
+    "    popw %ds\n" \
+    "    popa\n" \
+    "    add $0x4, %esp\n" \
+    "    iret\n" \
+);
 
 // #define EH_ENTRY_NO_CODE(ec) \
 // extern "C" void exception_ ## ec ## _handler(RegisterDump&); \
@@ -264,35 +264,35 @@ asm(
 // }
 
 
-// // 13: General Protection Fault
-// EH_ENTRY(13);
-// void exception_13_handler(RegisterDumpWithExceptionCode& regs)
-// {
-//     kprintf("%s GPF: %u(%s)\n", current->isRing0() ? "Kernel" : "User", current->pid(), current->name().characters());
+// 13: General Protection Fault
+EH_ENTRY(13);
+void exception_13_handler(RegisterDumpWithExceptionCode& regs)
+{
+    kprintf("%s GPF: %u(%s)\n", current->isRing0() ? "Kernel" : "User", current->pid(), current->name().characters());
 
-//     word ss;
-//     dword esp;
-//     if (current->isRing0()) {
-//         ss = regs.ds;
-//         esp = regs.esp;
-//     } else {
-//         ss = regs.ss_if_crossRing;
-//         esp = regs.esp_if_crossRing;
-//     }
+    word ss;
+    dword esp;
+    if (current->isRing0()) {
+        ss = regs.ds;
+        esp = regs.esp;
+    } else {
+        ss = regs.ss_if_crossRing;
+        esp = regs.esp_if_crossRing;
+    }
 
-//     kprintf("exception code: %w\n", regs.exception_code);
-//     kprintf("pc=%w:%x ds=%w es=%w fs=%w gs=%w\n", regs.cs, regs.eip, regs.ds, regs.es, regs.fs, regs.gs);
-//     kprintf("stk=%w:%x\n", ss, esp);
-//     kprintf("eax=%x ebx=%x ecx=%x edx=%x\n", regs.eax, regs.ebx, regs.ecx, regs.edx);
-//     kprintf("ebp=%x esp=%x esi=%x edi=%x\n", regs.ebp, esp, regs.esi, regs.edi);
+    kprintf("exception code: %w\n", regs.exception_code);
+    kprintf("pc=%w:%x ds=%w es=%w fs=%w gs=%w\n", regs.cs, regs.eip, regs.ds, regs.es, regs.fs, regs.gs);
+    kprintf("stk=%w:%x\n", ss, esp);
+    kprintf("eax=%x ebx=%x ecx=%x edx=%x\n", regs.eax, regs.ebx, regs.ecx, regs.edx);
+    kprintf("ebp=%x esp=%x esi=%x edi=%x\n", regs.ebp, esp, regs.esi, regs.edi);
 
-//     if (current->isRing0()) {
-//         kprintf("Oh shit, we've crashed in ring 0 :(\n");
-//         HANG;
-//     }
+    if (current->isRing0()) {
+        kprintf("Oh shit, we've crashed in ring 0 :(\n");
+        HANG;
+    }
 
-//     current->crash();
-// }
+    current->crash();
+}
 
 // // 14: Page Fault
 // EH_ENTRY(14);
@@ -375,20 +375,20 @@ asm(
 //     }
 // }
 
-// #define EH(i, msg) \
-//     static void _exception ## i () \
-//     { \
-//         kprintf(msg"\n"); \
-//         dword cr0, cr2, cr3, cr4; \
-//         asm ("movl %%cr0, %%eax":"=a"(cr0)); \
-//         asm ("movl %%cr2, %%eax":"=a"(cr2)); \
-//         asm ("movl %%cr3, %%eax":"=a"(cr3)); \
-//         asm ("movl %%cr4, %%eax":"=a"(cr4)); \
-//         kprintf("CR0=%x CR2=%x CR3=%x CR4=%x\n", cr0, cr2, cr3, cr4); \
-//         HANG; \
-//     }
+#define EH(i, msg) \
+    static void _exception ## i () \
+    { \
+        kprintf(msg"\n"); \
+        dword cr0, cr2, cr3, cr4; \
+        asm ("movl %%cr0, %%eax":"=a"(cr0)); \
+        asm ("movl %%cr2, %%eax":"=a"(cr2)); \
+        asm ("movl %%cr3, %%eax":"=a"(cr3)); \
+        asm ("movl %%cr4, %%eax":"=a"(cr4)); \
+        kprintf("CR0=%x CR2=%x CR3=%x CR4=%x\n", cr0, cr2, cr3, cr4); \
+        HANG; \
+    }
 
-// EH(0, "Divide error")
+EH(0, "Divide error")
 // EH(1, "Debug exception")
 // EH(2, "Unknown error")
 // EH(3, "Breakpoint")
@@ -527,7 +527,7 @@ void idt_init()
     for (byte i = 0xff; i > 0x10; --i)
         register_interrupt_handler(i, unimp_trap);
 
-//     register_interrupt_handler(0x00, _exception0);
+    register_interrupt_handler(0x00, _exception0);
 //     register_interrupt_handler(0x01, _exception1);
 //     register_interrupt_handler(0x02, _exception2);
 //     register_interrupt_handler(0x03, _exception3);
@@ -540,7 +540,7 @@ void idt_init()
 //     register_interrupt_handler(0x0a, _exception10);
 //     register_interrupt_handler(0x0b, _exception11);
 //     register_interrupt_handler(0x0c, _exception12);
-//     register_interrupt_handler(0x0d, exception_13_entry);
+    register_interrupt_handler(0x0d, exception_13_entry);
 //     register_interrupt_handler(0x0e, exception_14_entry);
 //     register_interrupt_handler(0x0f, _exception15);
 //     register_interrupt_handler(0x10, _exception16);

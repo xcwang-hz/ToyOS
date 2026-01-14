@@ -182,29 +182,29 @@ struct RegisterDump {
     word ss_if_crossRing;
 } PACKED;
 
-// struct RegisterDumpWithExceptionCode {
-//     word ss;
-//     word gs;
-//     word fs;
-//     word es;
-//     word ds;
-//     dword edi;
-//     dword esi;
-//     dword ebp;
-//     dword esp;
-//     dword ebx;
-//     dword edx;
-//     dword ecx;
-//     dword eax;
-//     word exception_code;
-//     word __exception_code_padding;
-//     dword eip;
-//     word cs;
-//     word __csPadding;
-//     dword eflags;
-//     dword esp_if_crossRing;
-//     word ss_if_crossRing;
-// } PACKED;
+struct RegisterDumpWithExceptionCode {
+    word ss;
+    word gs;
+    word fs;
+    word es;
+    word ds;
+    dword edi;
+    dword esi;
+    dword ebp;
+    dword esp;
+    dword ebx;
+    dword edx;
+    dword ecx;
+    dword eax;
+    word exception_code;
+    word __exception_code_padding;
+    dword eip;
+    word cs;
+    word __csPadding;
+    dword eflags;
+    dword esp_if_crossRing;
+    word ss_if_crossRing;
+} PACKED;
 
 // struct FPUState {
 //     dword cwd;

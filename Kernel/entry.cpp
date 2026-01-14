@@ -19,18 +19,6 @@ Terminal* terminal1 = nullptr;
 Terminal* terminal2 = nullptr;
 system_t system;
 
-void shell_entry() {
-// #ifdef I386    
-//     enter_user_mode(
-//         (uint32_t)&shell_main,                  // Entry point
-//         (uint32_t)user_stack + sizeof(user_stack), // User ESP
-//         (uint32_t)kernel_stack + sizeof(kernel_stack) // Kernel ESP0 (for handling interrupts later)
-//     );
-// #else
-//     shell_main();    
-// #endif    
-}
-
 void task1_entry() {
     while (true) {
         terminal1->on_char('A');
@@ -67,7 +55,7 @@ extern "C" void kernel_entry(int width, int height, uint32_t framebuffer, uint8_
     terminal1->create_window(size, fb_ptr);
     terminal2->create_window(size, fb_ptr);
 
-    Process::create_kernel_process("Shell", shell_entry);
+    // Process::create_kernel_process("Shell", task1_entry);
     Process::create_kernel_process("Background", task2_entry);
 
     RetainPtr<GraphicsBitmap> backing = GraphicsBitmap::create_wrapper(size, fb_ptr);

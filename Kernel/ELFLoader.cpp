@@ -1,7 +1,7 @@
 #include "ELFLoader.h"
 #include <AK/kstdio.h>
 
-#define ELFLOADER_DEBUG
+// #define ELFLOADER_DEBUG
 //#define SUPPORT_RELOCATIONS
 
 ELFLoader::ELFLoader(const byte* buffer)

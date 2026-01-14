@@ -522,8 +522,7 @@ Process* Process::create_user_process(const String& path)
     ELFLoader* loader = new ELFLoader(binary_data);
     loader->load();
     uint32_t entry_address = loader->entry().get();
-    void (*entry)() = reinterpret_cast<void (*)()>(entry_address);
-    auto* process = new Process(parts.take_last(), entry, 0);
+    auto* process = new Process(parts.take_last(), nullptr, 0);
 #endif
 
 //     error = process->exec(path, move(arguments), move(environment));
@@ -543,6 +542,58 @@ Process* Process::create_user_process(const String& path)
 //     kprintf("Process %u (%s) spawned @ %p\n", process->pid(), process->name().characters(), process->m_tss.eip);
 // #endif
 //     error = 0;
+
+#ifdef I386
+    // 3. Manually Construct Kernel Stack for Ring 3 Switch
+    // Goal: Pre-populate the stack so when the Scheduler switches to this process,
+    // it "returns" directly into 'enter_user_mode', which then jumps to Ring 3.
+
+    uint32_t kernel_stack_top = (uint32_t)process->m_kernel_stack_base + defaultStackSize;
+    
+    // For now, hardcode user stack to 8MB physical address (No paging yet)
+    uint32_t user_stack_top = 0x800000; 
+
+    // We manipulate the stack pointer directly (Stack grows downwards)
+    uint32_t* stack = (uint32_t*)kernel_stack_top;
+
+    // --- Part A: Arguments for enter_user_mode ---
+    // Function signature: void enter_user_mode(entry, user_stack, kernel_stack)
+    // CDECL calling convention pushes arguments from Right to Left.
+    
+    *(--stack) = kernel_stack_top;  // Arg3: Kernel Stack Top (For TSS update)
+    *(--stack) = user_stack_top;    // Arg2: User Stack Top (ESP3)
+    *(--stack) = entry_address;     // Arg1: Entry Point (EIP3)
+    *(--stack) = 0;                 // Dummy Return Address (enter_user_mode never returns)
+
+    // --- Part B: Context for asm_context_switch ---
+    // When asm_context_switch executes 'ret', it pops EIP.
+    // We want it to jump to 'enter_user_mode'.
+
+    *(--stack) = (uint32_t)enter_user_mode; // EIP: The "Return Address" for the scheduler
+    *(--stack) = 0x0202;                    // EFLAGS: IF=1 (Interrupts Enabled), Bit 1 is always 1
+
+    // --- Part C: Registers for POPA ---
+    // asm_context_switch executes 'popa' before 'ret'. We must reserve space.
+    // Order: EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX
+    
+    *(--stack) = 0; // EAX
+    *(--stack) = 0; // ECX
+    *(--stack) = 0; // EDX
+    *(--stack) = 0; // EBX
+    *(--stack) = 0; // ESP (Ignored by POPA)
+    *(--stack) = 0; // EBP
+    *(--stack) = 0; // ESI
+    *(--stack) = 0; // EDI
+
+    // 4. Update the process's stack pointer
+    // The scheduler will read this value into ESP when switching to this process.
+    process->m_kernel_stack_top = (uint32_t)stack;
+
+    // [CRITICAL CHANGE 2] Removed the direct call to enter_user_mode().
+    // We have prepared the stage. We now let the Scheduler pick this task up naturally.
+    // When it does, it will execute our fabricated stack frame and jump to Ring 3.
+#endif
+
     return process;
 }
 
@@ -1002,16 +1053,16 @@ void Process::setup_kernel_stack(void (*entry)())
 //     *stack_ptr = value;
 // }
 
-// void Process::crash()
-// {
-//     ASSERT_INTERRUPTS_DISABLED();
-//     ASSERT(state() != Dead);
-//     m_termination_signal = SIGSEGV;
-//     set_state(Dead);
-//     dumpRegions();
-//     Scheduler::pick_next_and_switch_now();
-//     ASSERT_NOT_REACHED();
-// }
+void Process::crash()
+{
+    // ASSERT_INTERRUPTS_DISABLED();
+    ASSERT(state() != Dead);
+    // m_termination_signal = SIGSEGV;
+    // set_state(Dead);
+    // dumpRegions();
+    // Scheduler::pick_next_and_switch_now();
+    ASSERT_NOT_REACHED();
+}
 
 // Process* Process::from_pid(pid_t pid)
 // {

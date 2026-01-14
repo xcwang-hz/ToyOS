@@ -3,8 +3,8 @@ ENTRY(_start)
 
 SECTIONS
 {
-    /* Load the executable at a fixed address (e.g. 0x08048000) */
-    . = 0x08048000;
+    /* Load the executable at a fixed address (e.g. 0x400000) */
+    . = 0x400000;
 
     .text : ALIGN(4K)
     {

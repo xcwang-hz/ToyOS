@@ -86,13 +86,13 @@ public:
         // BlockedSelect,
     };
 
-    // enum RingLevel {
-    //     Ring0 = 0,
-    //     Ring3 = 3,
-    // };
+    enum RingLevel {
+        Ring0 = 0,
+        Ring3 = 3,
+    };
 
-    // bool isRing0() const { return m_ring == Ring0; }
-    // bool isRing3() const { return m_ring == Ring3; }
+    bool isRing0() const { return m_ring == Ring0; }
+    bool isRing3() const { return m_ring == Ring3; }
 
     // bool is_blocked() const
     // {
@@ -232,7 +232,7 @@ public:
     // static void initialize_gui_statics();
     // int make_window_id();
 
-    // void crash() NORETURN;
+    void crash() NORETURN;
     // static int reap(Process&) WARN_UNUSED_RESULT;
 
     // const TTY* tty() const { return m_tty; }
@@ -343,7 +343,7 @@ private:
     //     dword flags { 0 };
     // };
     // Vector<FileDescriptorAndFlags> m_fds;
-    // RingLevel m_ring { Ring0 };
+    RingLevel m_ring { Ring0 };
     // int m_error { 0 };
     // void* m_kernelStack { nullptr };
     // dword m_timesScheduled { 0 };
@@ -357,7 +357,7 @@ private:
     // dword m_signal_mask { 0xffffffff };
 
     // byte m_termination_status { 0 };
-    // byte m_termination_signal { 0 };
+    byte m_termination_signal { 0 };
 
     // RetainPtr<Inode> m_cwd;
     // RetainPtr<Inode> m_executable;
