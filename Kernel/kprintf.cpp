@@ -3,7 +3,7 @@
 #ifdef I386
 #include "IO.h"
 #else
-#include <arch/wasm/entry.h>
+#include <arch/wasm/wasm_entry.h>
 #endif
 #include <LibC/stdarg.h>
 // #include "Process.h"

@@ -7,7 +7,7 @@
 #endif
 #include "kprintf.h"
 #include "Keyboard.h"
-#include <Kernel/entry.h>
+#include <Kernel/kernel_entry.h>
 #include <Process.h>
 #include <Scheduler.h>
 // #include "VirtualConsole.h"

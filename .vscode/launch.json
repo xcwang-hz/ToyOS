@@ -9,6 +9,7 @@
             "miDebuggerServerAddress": "localhost:1234",
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
             "stopAtEntry": true,
             "setupCommands": [
                 {
@@ -16,6 +17,11 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 },
+                {
+                    "description": "Load Userland Symbols",
+                    "text": "add-symbol-file ${workspaceFolder}/build/i386/bin/sh 0xb01000", 
+                    "ignoreFailures": false
+                },                
                 {
                      "description": "Set architecture to i386",
                      "text": "set architecture i386",
@@ -25,7 +31,7 @@
                     "description": "Break at kernel entry",
                     "text": "hbreak kernel_entry",
                     "ignoreFailures": false
-                }                
+                }                                
             ]
         },
         {

@@ -25,7 +25,7 @@
 #include <Kernel/ELFImage.h>
 #include <Kernel/ELFLoader.h>
 #else
-#include <arch/wasm/entry.h>
+#include <arch/wasm/wasm_entry.h>
 #endif
 
 //#define DEBUG_IO
@@ -522,6 +522,7 @@ Process* Process::create_user_process(const String& path)
     ELFLoader* loader = new ELFLoader(binary_data);
     loader->load();
     uint32_t entry_address = loader->entry().get();
+    kprintf("...Userland entry: %x\n", entry_address);
     auto* process = new Process(parts.take_last(), nullptr, 0);
 #endif
 

@@ -52,7 +52,7 @@ set(KERNEL_COMMON_SOURCES
     Kernel/Scheduler.cpp
     Kernel/StdLib.cpp
     Kernel/Syscall.cpp
-    Kernel/entry.cpp
+    Kernel/kernel_entry.cpp
     Kernel/kmalloc.cpp
     Kernel/kprintf.cpp
     Kernel/SharedGraphics/CharacterBitmap.cpp
@@ -67,7 +67,7 @@ set(KERNEL_COMMON_SOURCES
 set(I386_KERNEL_ONLY_SOURCES
     arch/i386/PIC.cpp
     arch/i386/boot.S
-    arch/i386/entry.cpp
+    arch/i386/i386_entry.cpp
     arch/i386/i386.cpp
     arch/i386/i8253.cpp
     Kernel/ELFImage.cpp
@@ -75,7 +75,7 @@ set(I386_KERNEL_ONLY_SOURCES
 )
 
 set(LIBC_SOURCES
-    LibC/entry.cpp
+    LibC/libc_entry.cpp
     LibC/stdio.cpp
     LibC/string.cpp
     LibC/unistd.cpp
@@ -265,7 +265,7 @@ add_custom_target(toyos_iso ALL DEPENDS ${ISO_IMAGE})
 # ------------------------------------------------------------------------------
 
 set(WASM_KERNEL_ONLY_SOURCES
-    arch/wasm/entry.cpp
+    arch/wasm/wasm_entry.cpp
 )
 
 set(WASM_SOURCES

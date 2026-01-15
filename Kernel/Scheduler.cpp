@@ -5,7 +5,7 @@
 #ifdef I386
 #include <arch/i386/i386.h>
 #else
-#include <arch/wasm/entry.h>
+#include <arch/wasm/wasm_entry.h>
 #endif
 
 #define LOG_EVERY_CONTEXT_SWITCH

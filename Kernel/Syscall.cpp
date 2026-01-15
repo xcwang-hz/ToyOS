@@ -2,7 +2,7 @@
 #include "Syscall.h"
 // #include "Console.h"
 #include "Scheduler.h"
-#include "entry.h"
+#include <Kernel/kernel_entry.h>
 #ifdef I386
 #include "i386.h"
 extern "C" void syscall_entry(RegisterDump&);

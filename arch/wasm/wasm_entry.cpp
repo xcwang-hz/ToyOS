@@ -1,9 +1,9 @@
 #include <AK/Types.h>
 #include <Kernel/kprintf.h>
-#include <Kernel/entry.h>
+#include <Kernel/kernel_entry.h>
 #include <Kernel/Scheduler.h>
 #include <Kernel/Process.h>
-#include <arch/wasm/entry.h>
+#include <arch/wasm/wasm_entry.h>
 #include <Kernel/Syscall.h>
 
 const int SCREEN_WIDTH = 1024;

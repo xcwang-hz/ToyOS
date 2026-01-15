@@ -11,9 +11,6 @@
 #include "Syscall.h"
 #include "Keyboard.h"
 
-static uint32_t user_stack[8192];
-static uint32_t kernel_stack[8192];
-
 extern void shell_main();
 Terminal* terminal1 = nullptr;
 Terminal* terminal2 = nullptr;
@@ -21,11 +18,7 @@ system_t system;
 
 void task1_entry() {
     while (true) {
-        terminal1->on_char('A');
-        terminal1->paint(); 
         Scheduler::yield(); 
-        
-        for (int i = 0; i < 1000000; i++); 
     }
 }
 
@@ -55,7 +48,7 @@ extern "C" void kernel_entry(int width, int height, uint32_t framebuffer, uint8_
     terminal1->create_window(size, fb_ptr);
     terminal2->create_window(size, fb_ptr);
 
-    // Process::create_kernel_process("Shell", task1_entry);
+    Process::create_kernel_process("Shell", task1_entry);
     Process::create_kernel_process("Background", task2_entry);
 
     RetainPtr<GraphicsBitmap> backing = GraphicsBitmap::create_wrapper(size, fb_ptr);

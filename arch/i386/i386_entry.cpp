@@ -1,7 +1,7 @@
 #include <AK/Types.h>
 #include <Kernel/kprintf.h>
 #include <Kernel/StdLib.h>
-#include <Kernel/entry.h>
+#include <Kernel/kernel_entry.h>
 #include <arch/i386/i386.h>
 #include "i8253.h"
 #include "PIC.h"
